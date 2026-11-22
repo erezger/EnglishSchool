@@ -9,14 +9,33 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull and Rebuild on Oracle Server
+      - name: Backup DB, then pull and rebuild on Oracle Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
             cd ~/school
+
+            # ---- 1. Backup the database BEFORE anything changes (deploy aborts if it fails) ----
+            BACKUP_DIR=~/backups/school
+            KEEP=14
+            mkdir -p "$BACKUP_DIR"
+            if docker compose ps --status running --services | grep -qx db; then
+              F="$BACKUP_DIR/$(date +%Y-%m-%d_%H%M%S)_$(git rev-parse --short HEAD).sql"
+              docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner' > "$F" \
+                || { echo "DB backup failed - deploy aborted"; rm -f "$F"; exit 1; }
+              test -s "$F" || { echo "DB backup is empty - deploy aborted"; rm -f "$F"; exit 1; }
+              gzip "$F"
+              echo "Backup saved: $F.gz ($(du -h "$F.gz" | cut -f1))"
+              ls -1t "$BACKUP_DIR"/*.sql.gz | tail -n +$((KEEP + 1)) | xargs -r rm -f
+            else
+              echo "DB container not running - skipping backup (first deploy?)"
+            fi
+
+            # ---- 2. Deploy ----
             git pull origin main
             docker compose up -d --build
             docker image prune -f
