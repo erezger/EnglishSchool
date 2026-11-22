@@ -1,13 +1,14 @@
 # Backlog
 
+## Done
+
+- Spelling with letter names, class word lists, AI completion (PR #4)
+- Mastery check ("מבחן אמת") + parent coin add/remove with reason (PR #5)
+
 Ideas and requests not built yet, roughly by priority. Move an item to a branch/PR when work starts.
 
 ## Next up
 
-- **Mastery check ("מבחן אמת")** — a periodic short test on words/letters the kid marked as known,
-  without hints, so progress can't be faked by just clicking "I learned it". Results visible to parents.
-  - **Parents can deduct coins** if the test shows things were marked without being learned
-    (amount + reason; shown to the kid; audit-logged). *(requested)*
 - **Spaced repetition "5 minutes a day"** — daily review of due words (stats already stored per word in
   `spellingStats`: correct / wrong / streak / last seen).
 - **Placement test** — short adaptive test that skips levels the kid already knows.
