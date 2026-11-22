@@ -93,6 +93,11 @@ export default function StudentCard({
         <Stat label="משפטים" value={String(p.readSentences)} />
         <Stat label="רצף ימים" value={`🔥 ${p.dailyStreak}`} />
       </div>
+      {p.storiesRead > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-pink-50/60 border border-pink-100 rounded-xl px-3 py-2">
+          📖 קריאה והבנה: {p.storiesRead} סיפורים · ממוצע הבנה {p.storiesAvg}%
+        </div>
+      )}
       {Object.keys(p.grammar).length > 0 && (
         <div className="mt-2 text-xs font-bold text-slate-600 bg-emerald-50/60 border border-emerald-100 rounded-xl px-3 py-2">
           📘 דקדוק (שיא):{' '}

@@ -28,6 +28,8 @@ export type StudentSummary = {
     dictationTried: number;
     dictationPerfect: number;
     grammar: Record<string, number>;
+    storiesRead: number;
+    storiesAvg: number;
   };
   grade: number | null;
   rewards: { id: string; title: string; cost: number }[];

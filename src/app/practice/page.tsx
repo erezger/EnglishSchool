@@ -33,6 +33,7 @@ export default async function PracticePage() {
     },
     { href: '/practice/spell', icon: '🐝', title: 'שומעים ומאייתים', desc: 'מאייתים מילים לפי שמות האותיות', tone: 'yellow' },
     { href: '/practice/dictation', icon: '✍️', title: 'הכתבה', desc: 'שומעים משפט שלם ומקלידים', tone: 'indigo' },
+    { href: '/practice/reading', icon: '📖', title: 'קוראים ומבינים', desc: 'סיפורים קצרים עם שאלות הבנה', tone: 'pink' },
     { href: '/practice/grammar', icon: '📘', title: 'דקדוק', desc: 'am/is/are, have/has, רבים ועוד', tone: 'emerald' },
     ...(data.placement ? [] : [{ href: '/practice/placement', icon: '🧭', title: 'מבחן מיקום', desc: 'מדלגים על מה שכבר יודעים', tone: 'violet' as const }]),
   ];

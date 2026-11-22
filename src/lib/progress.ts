@@ -153,7 +153,14 @@ export function summarize(data: ProgressData | undefined) {
     placement: placementOf(data),
     ...dictationSummary(data?.dictationStats),
     grammar: grammarSummary(data?.grammarStats),
+    ...readingSummary(data?.readingStats),
   };
+}
+
+function readingSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { best?: number }>) : [];
+  const bests = stats.map((s) => Number(s?.best) || 0);
+  return { storiesRead: stats.length, storiesAvg: bests.length ? Math.round(bests.reduce((a, b) => a + b, 0) / bests.length) : 0 };
 }
 
 /** Best score per grammar topic (topic id -> %). */
