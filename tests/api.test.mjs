@@ -551,3 +551,20 @@ describe('grammar', () => {
     assert.deepEqual(s.progress.grammar, { be: 88 });
   });
 });
+
+describe('reading comprehension', () => {
+  test('page is for kids; parent summary shows stories and average', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = await fetch(BASE + '/practice/reading', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(page.status, 200);
+    assert.ok((await page.text()).includes('קוראים ומבינים'));
+    const asParent = await fetch(BASE + '/practice/reading', { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(asParent.status));
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const readingStats = { 'g4-zoo': { best: 100, reads: 1, t: 1 }, 'g4-rain': { best: 60, reads: 2, t: 1 } };
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, readingStats }, baseVersion: p.version });
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.progress.storiesRead, 2);
+    assert.equal(s.progress.storiesAvg, 80);
+  });
+});
