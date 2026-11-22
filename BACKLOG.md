@@ -7,6 +7,7 @@
 - Daily spaced-repetition review "5 דקות ביום" (PR #6)
 - Placement test "מבחן מיקום" (PR #7)
 - Sentence dictation + practice hub (PR #8)
+- Grammar mini-games (PR #9)
 
 Ideas and requests not built yet, roughly by priority. Move an item to a branch/PR when work starts.
 
@@ -17,7 +18,6 @@ Ideas and requests not built yet, roughly by priority. Move an item to a branch/
 
 - Sight-words track (the, said, because, friend…) as its own game modes (partly in the grade 4 bank).
 - Reading comprehension: short graded stories with audio, tap a word to hear/translate, questions (unseen prep).
-- Grade 3–4 grammar mini-games: am/is/are, have/has, there is/are, plurals, present simple.
 - Speaking: say the word into the mic (Chrome speech recognition) and get feedback.
 - More subjects later (content-driven, so a subject is mostly data, not code).
 

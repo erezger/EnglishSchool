@@ -536,3 +536,18 @@ describe('dictation & practice hub', () => {
     assert.equal(s.progress.dictationPerfect, 1);
   });
 });
+
+describe('grammar', () => {
+  test('page is for kids; best scores show for parents', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = await fetch(BASE + '/practice/grammar', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(page.status, 200);
+    assert.ok((await page.text()).includes('am / is / are'));
+    const asParent = await fetch(BASE + '/practice/grammar', { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(asParent.status));
+    const { json: p } = await kid('GET', '/api/me/progress');
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, grammarStats: { be: { c: 7, w: 1, best: 88, t: 1 } } }, baseVersion: p.version });
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.deepEqual(s.progress.grammar, { be: 88 });
+  });
+});

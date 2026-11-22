@@ -152,7 +152,14 @@ export function summarize(data: ProgressData | undefined) {
     ...reviewSummary(data),
     placement: placementOf(data),
     ...dictationSummary(data?.dictationStats),
+    grammar: grammarSummary(data?.grammarStats),
   };
+}
+
+/** Best score per grammar topic (topic id -> %). */
+function grammarSummary(raw: unknown): Record<string, number> {
+  if (!raw || typeof raw !== 'object') return {};
+  return Object.fromEntries(Object.entries(raw as Record<string, { best?: number }>).map(([k, v]) => [k, Number(v?.best) || 0]));
 }
 
 function dictationSummary(raw: unknown) {
