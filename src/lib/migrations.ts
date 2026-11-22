@@ -101,4 +101,35 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    id: 3,
+    name: 'grades_and_word_lists',
+    sql: `
+      ALTER TABLE users ADD COLUMN grade SMALLINT CHECK (grade BETWEEN 1 AND 12);
+
+      CREATE TABLE word_lists (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        family_id   UUID NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+        student_id  UUID REFERENCES users(id) ON DELETE CASCADE,   -- NULL = every kid in the family
+        title       TEXT NOT NULL,
+        created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX word_lists_family_idx ON word_lists (family_id);
+
+      CREATE TABLE words (
+        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        list_id       UUID NOT NULL REFERENCES word_lists(id) ON DELETE CASCADE,
+        word          TEXT NOT NULL,
+        hebrew        TEXT NOT NULL DEFAULT '',
+        emoji         TEXT NOT NULL DEFAULT '',
+        example_en    TEXT NOT NULL DEFAULT '',
+        example_he    TEXT NOT NULL DEFAULT '',
+        ai_generated  BOOLEAN NOT NULL DEFAULT false,  -- true until a parent edits/approves it
+        position      INT NOT NULL DEFAULT 0,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX words_list_word_key ON words (list_id, lower(word));
+    `,
+  },
 ];

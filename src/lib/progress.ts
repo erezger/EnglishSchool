@@ -147,5 +147,16 @@ export function summarize(data: ProgressData | undefined) {
     mistakes: arr('mistakes').length,
     equippedAvatar: typeof data?.equippedAvatar === 'string' ? data.equippedAvatar : 'av_girl',
     equippedPet: typeof data?.equippedPet === 'string' ? data.equippedPet : 'pet_dog',
+    ...spellingSummary(data?.spellingStats),
+  };
+}
+
+/** Spelling stats written by /practice/spell: { [word]: { c, w, s, t } }. */
+function spellingSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { s?: number; w?: number }>) : [];
+  return {
+    spellingPracticed: stats.length,
+    spellingKnown: stats.filter((st) => (st?.s ?? 0) >= 3).length,
+    spellingWeak: stats.filter((st) => (st?.w ?? 0) > 0 && (st?.s ?? 0) < 3).length,
   };
 }
