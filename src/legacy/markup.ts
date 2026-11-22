@@ -12,37 +12,6 @@ export const LEGACY_MARKUP = String.raw`
         </div>
     </div>
 
-    <!-- =========================================================================
-         PROFILE SELECTION SCREEN (AVIGAIL & RANI)
-         ========================================================================= -->
-    <div id="profile-screen" class="fixed inset-0 z-40 overflow-y-auto bg-gradient-to-br from-indigo-50 via-purple-50 to-teal-50 flex flex-col items-center justify-center p-4 sm:p-6">
-        <div class="max-w-3xl w-full text-center animate-pop">
-            <div class="inline-flex items-center gap-2 bg-white/90 border border-indigo-200 px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold text-indigo-700 shadow-xs mb-4">
-                <span>✨</span>
-                <span>אנגלית בקליק PRO</span>
-                <span id="profile-cloud-status" class="text-emerald-600">• מחובר</span>
-            </div>
-
-            <h1 class="text-3xl sm:text-5xl font-black text-slate-800 mb-2">
-                מי לומדת אנגלית עכשיו? 🌟
-            </h1>
-            <p class="text-sm sm:text-base text-slate-600 font-medium mb-7">
-                בחרי את השם שלך כדי להמשיך בדיוק מאיפה שעצרת ולצבור מטבעות לפרסים!
-            </p>
-
-            <!-- Two Sisters Profile Cards -->
-            <div id="profile-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-7">
-                <!-- Populated dynamically by JS -->
-            </div>
-
-            <!-- Parent Controls Button on Profile Screen -->
-            <button onclick="openParentModal()" class="inline-flex items-center gap-2 bg-white/90 hover:bg-white border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm px-5 py-2.5 rounded-2xl shadow-xs transition active:scale-95 cursor-pointer">
-                <span>⚙️</span>
-                <span>הורים / איפוס נתונים</span>
-            </button>
-        </div>
-    </div>
-
     <!-- MAIN APP WRAPPER -->
     <div id="app-wrapper" class="hidden max-w-6xl mx-auto px-3 sm:px-5 py-4 sm:py-6 pb-20">
 
@@ -59,10 +28,10 @@ export const LEGACY_MARKUP = String.raw`
                     <div>
                         <div class="flex items-center gap-2 flex-wrap">
                             <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-l from-indigo-700 to-purple-600 bg-clip-text text-transparent">
-                                שלום, <span id="header-profile-name">אביגיל</span>!
+                                שלום, <span id="header-profile-name"></span>!
                             </h1>
-                            <button onclick="openProfileScreen()" class="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer">
-                                🔄 החלף משתמשת
+                            <button onclick="switchUser()" class="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer">
+                                🔄 החלפת משתמש
                             </button>
                             <span id="save-status-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 נשמר ✓
@@ -119,9 +88,9 @@ export const LEGACY_MARKUP = String.raw`
                     </button>
 
                     <!-- Parent Control & Reset Button -->
-                    <button onclick="openParentModal()" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-2xl font-bold text-xs transition active:scale-95 cursor-pointer" title="הגדרות הורים ואיפוס">
-                        <span>⚙️</span>
-                        <span class="hidden sm:inline">הורים / איפוס</span>
+                    <button onclick="goToParentArea()" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-2xl font-bold text-xs transition active:scale-95 cursor-pointer" title="אזור הורים (דורש התחברות הורה)">
+                        <span>🔒</span>
+                        <span class="hidden sm:inline">אזור הורים</span>
                     </button>
                 </div>
             </div>
@@ -500,29 +469,4 @@ export const LEGACY_MARKUP = String.raw`
         </div>
     </div>
 
-    <!-- =========================================================================
-         MODAL 4: PARENT CONTROL & SAFE RESET MODAL
-         ========================================================================= -->
-    <div id="parent-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-pop">
-            <div class="bg-slate-900 text-white p-4 sm:p-5 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">⚙️</span>
-                    <div>
-                        <h2 class="text-xl font-black">פאנל הורים ואיפוס בטוח</h2>
-                        <p class="text-xs text-slate-300">ניהול פרופילים (אביגיל ורני), איפוס התקדמות ופרסים מותאמים</p>
-                    </div>
-                </div>
-                <button onclick="closeParentModal()" class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center font-black cursor-pointer">✕</button>
-            </div>
-
-            <div id="parent-modal-body" class="p-5 sm:p-6 overflow-y-auto space-y-6">
-                <!-- Populated dynamically -->
-            </div>
-        </div>
-    </div>
-
-    <!-- =========================================================================
-         MAIN APPLICATION SCRIPT (ES MODULE WITH FIREBASE CLOUD PERSISTENCE)
-         ========================================================================= -->
 `;
