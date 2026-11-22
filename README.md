@@ -67,7 +67,27 @@ curl http://127.0.0.1:3000/api/health        # {"ok":true,"db":"up"}
 ```
 nginx: see `deploy/nginx.conf.example` (proxy to 127.0.0.1:APP_PORT, keep the X-Forwarded-* headers), HTTPS via certbot.
 
-Backup: `docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > backup.sql`
+## Data safety & backups
+
+- Data lives in the Docker volume `<project>_pgdata`; `docker compose up -d --build` never touches it.
+  **Never** run `docker compose down -v` / `docker volume prune` on the server.
+- Pin the project name in each server `.env` (different per environment!) so renaming a folder can't
+  switch to a new empty volume: `COMPOSE_PROJECT_NAME=school` / `COMPOSE_PROJECT_NAME=school-staging`.
+- Every deploy (GitHub Actions) first dumps the DB to `~/backups/<env>/<date>_<commit>.sql.gz`
+  (last 14 kept). If the backup fails, the deploy is aborted.
+
+Manual backup:
+```bash
+docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner' | gzip > backup.sql.gz
+```
+
+Restore (replaces the current data — stop the app first):
+```bash
+docker compose stop app
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"'
+gzip -dc ~/backups/school/<file>.sql.gz | docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1'
+docker compose start app
+```
 
 ## Local development
 
