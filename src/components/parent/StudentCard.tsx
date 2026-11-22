@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api } from '@/lib/api-client';
 import { gradeLabel } from '@/content/wordbank';
 import { avatarEmoji, petEmoji, TOTAL_LEVELS } from '@/lib/catalog';
+import ChecksAndCoins from './ChecksAndCoins';
 import type { StudentSummary } from './types';
 import { Btn, ConfirmWithPassword, ErrorNote, Field, formatDate } from './ui';
 
@@ -151,6 +152,8 @@ export default function StudentCard({
               </Btn>
             </form>
           </div>
+
+          <ChecksAndCoins student={student} qs={qs} onChanged={onChanged} />
 
           {/* Account */}
           <div>

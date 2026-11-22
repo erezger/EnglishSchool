@@ -337,3 +337,123 @@ describe('word lists & spelling', () => {
     assert.equal(kid.progress.spellingPracticed, 1);
   });
 });
+
+describe('mastery checks & coin adjustments', () => {
+  // Correct answers from the game content (src/content/phonics.ts)
+  const LETTER_NAMES = { a: 'אֵיי', b: 'בִּי', s: 'אֶס' };
+  const MEANINGS = { bat: 'עטלף', sat: 'ישב' };
+  const decode = (audio) => Buffer.from(audio, 'base64').toString('utf8').split('').reverse().join('');
+  const answerFor = (q, correct) => {
+    if (!correct) return q.type === 'spell' ? 'zzz' : q.options.find((o) => o !== LETTER_NAMES[q.letter] && o !== MEANINGS[q.word]);
+    if (q.type === 'letter') return LETTER_NAMES[q.letter];
+    if (q.type === 'meaning') return MEANINGS[q.word];
+    return decode(q.audio);
+  };
+  let kid;
+
+  before(async () => {
+    kid = await login(famA.kid, '5555');
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const data = {
+      ...p.data,
+      coins: 10,
+      learnedLetters: ['a', 'b', 's'],
+      readWords: ['bat', 'sat'],
+      mistakes: [],
+      spellingStats: { cat: { c: 3, w: 0, s: 3, t: 1 } },
+    };
+    assert.equal((await kid('PUT', '/api/me/progress', { data, baseVersion: p.version })).status, 200);
+  });
+
+  test('parent sends a check; only one open at a time; answers never sent to the kid', async () => {
+    const fam = (await parentA('GET', '/api/family')).json;
+    assert.deepEqual(fam.students.find((s) => s.id === kidAId).checkable, { letters: 3, words: 2, spelling: 1 });
+    const r = await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters', 'words', 'spelling'], size: 10 });
+    assert.equal(r.status, 201, JSON.stringify(r.json));
+    assert.equal(r.json.total, 6);
+    assert.equal((await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 })).status, 409);
+    const { json } = await kid('GET', '/api/me/check');
+    assert.equal(json.check.questions.length, 6);
+    assert.ok(!JSON.stringify(json.check).includes('"answer"'), 'no answers in the payload');
+    assert.ok(!JSON.stringify(json.check).includes('"cat"'), 'spelling word not in plain text');
+    assert.equal((await kid('GET', '/api/me/notices')).json.openCheck.total, 6);
+  });
+
+  test('permissions: other kids and families cannot touch it, kids cannot create or cancel', async () => {
+    const { json } = await kid('GET', '/api/me/check');
+    const id = json.check.id;
+    assert.equal((await kidB('POST', `/api/me/check/${id}/answer`, { index: 0, answer: 'x' })).status, 404);
+    assert.equal((await kidB('POST', `/api/me/check/${id}/finish`)).status, 404);
+    assert.equal((await parentB('DELETE', `/api/family/checks/${id}`)).status, 404);
+    assert.equal((await parentB('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 })).status, 404);
+    assert.equal((await kid('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 })).status, 403);
+    assert.equal((await kid('POST', `/api/family/students/${kidAId}/coins`, { amount: 1000, reason: 'me' })).status, 403);
+  });
+
+  test('all wrong: graded on server, failed items go back to practice, first answer counts', async () => {
+    const { json } = await kid('GET', '/api/me/check');
+    const { id, questions } = json.check;
+    for (const [i, q] of questions.entries()) {
+      assert.equal((await kid('POST', `/api/me/check/${id}/answer`, { index: i, answer: answerFor(q, false) })).status, 200);
+      // a second (correct) answer is ignored
+      await kid('POST', `/api/me/check/${id}/answer`, { index: i, answer: answerFor(q, true) });
+    }
+    const fin = await kid('POST', `/api/me/check/${id}/finish`);
+    assert.equal(fin.status, 200);
+    assert.equal(fin.json.score, 0);
+    assert.equal(fin.json.coins, 0);
+    assert.equal((await kid('POST', `/api/me/check/${id}/finish`)).status, 404, 'cannot finish twice');
+    const { json: p } = await kid('GET', '/api/me/progress');
+    assert.deepEqual(p.data.learnedLetters, [], 'failed letters un-marked');
+    assert.deepEqual([...p.data.mistakes].sort(), ['bat', 'sat']);
+    assert.equal(p.data.spellingStats.cat.s, 0);
+    assert.equal(p.data.coins, 10);
+    const fam = (await parentA('GET', '/api/family')).json.students.find((s) => s.id === kidAId);
+    assert.equal(fam.checks[0].score, 0);
+    assert.equal(fam.checks[0].failed.length, 6);
+  });
+
+  test('all correct: +1 per answer and +5 bonus', async () => {
+    const { json: p } = await kid('GET', '/api/me/progress');
+    await kid('PUT', '/api/me/progress', {
+      data: { ...p.data, learnedLetters: ['a', 'b', 's'], spellingStats: { cat: { c: 3, w: 1, s: 3, t: 1 } } },
+      baseVersion: p.version,
+    });
+    const r = await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters', 'words', 'spelling'], size: 10 });
+    assert.equal(r.status, 201);
+    const { json } = await kid('GET', '/api/me/check');
+    for (const [i, q] of json.check.questions.entries()) {
+      await kid('POST', `/api/me/check/${json.check.id}/answer`, { index: i, answer: answerFor(q, true) });
+    }
+    const fin = await kid('POST', `/api/me/check/${json.check.id}/finish`);
+    assert.equal(fin.json.score, 6);
+    assert.equal(fin.json.coins, 11);
+    const { json: p2 } = await kid('GET', '/api/me/progress');
+    assert.equal(p2.data.coins, 21);
+    assert.equal(p2.data.spellingStats.cat.s, 4);
+  });
+
+  test('cancel an open check', async () => {
+    const r = await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 });
+    assert.equal((await parentA('DELETE', `/api/family/checks/${r.json.id}`)).status, 200);
+    assert.equal((await kid('GET', '/api/me/check')).json.check, null);
+  });
+
+  test('parent removes/adds coins with a reason; never below zero; kid gets a notice once', async () => {
+    assert.equal((await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: -5, reason: '' })).status, 400);
+    assert.equal((await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: 0, reason: 'x' })).status, 400);
+    const r1 = await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: -5, reason: 'סימנת בלי ללמוד' });
+    assert.equal(r1.json.coins, 16);
+    const r2 = await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: -1000, reason: 'test floor' });
+    assert.equal(r2.json.coins, 0);
+    assert.equal(r2.json.applied, -16);
+    await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: 3, reason: 'כל הכבוד' });
+    assert.equal((await parentB('POST', `/api/family/students/${kidAId}/coins`, { amount: 5, reason: 'x' })).status, 404);
+    const n = (await kid('GET', '/api/me/notices')).json.adjustments;
+    assert.deepEqual(n.map((a) => a.amount), [-5, -16, 3]);
+    await kid('POST', '/api/me/notices/seen', { ids: n.map((a) => a.id) });
+    assert.equal((await kid('GET', '/api/me/notices')).json.adjustments.length, 0);
+    const fam = (await parentA('GET', '/api/family')).json.students.find((s) => s.id === kidAId);
+    assert.equal(fam.coinAdjustments[0].seen, true);
+  });
+});

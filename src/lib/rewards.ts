@@ -1,6 +1,6 @@
 import { audit } from './audit';
 import { query, withTransaction } from './db';
-import { isUuid } from './family';
+import { isUuid } from './ids';
 import { HttpError } from './http';
 import { adjustCoins } from './progress';
 import type { SessionUser } from './session';

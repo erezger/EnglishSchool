@@ -132,4 +132,42 @@ export const MIGRATIONS: Migration[] = [
       CREATE UNIQUE INDEX words_list_word_key ON words (list_id, lower(word));
     `,
   },
+  {
+    id: 4,
+    name: 'mastery_checks_and_coin_adjustments',
+    sql: `
+      -- Parent-assigned checks of what a kid marked as known. Questions + answers stay server-side.
+      CREATE TABLE checks (
+        id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        student_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_by     UUID REFERENCES users(id) ON DELETE SET NULL,
+        scopes         TEXT[] NOT NULL,
+        status         TEXT NOT NULL DEFAULT 'assigned'
+                       CHECK (status IN ('assigned', 'in_progress', 'done', 'cancelled')),
+        questions      JSONB NOT NULL,
+        answers        JSONB NOT NULL DEFAULT '{}'::jsonb,
+        results        JSONB,
+        total          INT NOT NULL,
+        score          INT,
+        coins_awarded  INT,
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+        started_at     TIMESTAMPTZ,
+        finished_at    TIMESTAMPTZ
+      );
+      CREATE INDEX checks_student_idx ON checks (student_id, created_at DESC);
+
+      -- Coins added/removed by a parent, with a reason the kid sees.
+      CREATE TABLE coin_adjustments (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        student_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        amount      INT NOT NULL CHECK (amount <> 0),   -- requested
+        applied     INT NOT NULL,                        -- actual change (coins never go below 0)
+        reason      TEXT NOT NULL,
+        created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        seen_at     TIMESTAMPTZ
+      );
+      CREATE INDEX coin_adjustments_student_idx ON coin_adjustments (student_id, created_at DESC);
+    `,
+  },
 ];

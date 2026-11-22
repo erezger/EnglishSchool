@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server';
 import type { PoolClient } from 'pg';
 import { audit } from './audit';
+import { availableToCheck, recentAdjustments, recentChecks } from './checks';
+import { isUuid } from './ids';
 import { query, withTransaction } from './db';
 import { HttpError, requireUser } from './http';
 import {
@@ -46,9 +48,7 @@ export async function assertFamilyExists(familyId: string): Promise<void> {
   if (!rows[0]) throw new HttpError(404, 'not_found', 'המשפחה לא נמצאה');
 }
 
-export function isUuid(v: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-}
+export { isUuid } from './ids';
 
 type MemberRow = {
   id: string;
@@ -161,7 +161,12 @@ export async function getFamilyOverview(familyId: string) {
   ]);
   if (!family.rows[0]) throw new HttpError(404, 'not_found', 'המשפחה לא נמצאה');
 
+  const [checks, adjustments] = await Promise.all([recentChecks(familyId), recentAdjustments(familyId)]);
   const now = Date.now();
+  const studentRows = members.rows.filter((m) => m.role === 'student');
+  const checkable = new Map(
+    await Promise.all(studentRows.map(async (m) => [m.id, await availableToCheck(familyId, m.data ?? {})] as const)),
+  );
   const students = members.rows
     .filter((m) => m.role === 'student')
     .map((m) => ({
@@ -174,6 +179,9 @@ export async function getFamilyOverview(familyId: string) {
       lastLoginAt: m.last_login_at?.toISOString() ?? null,
       progress: summarize(m.data ?? undefined),
       rewards: rewards.rows.filter((r) => r.student_id === m.id).map(({ id, title, cost }) => ({ id, title, cost })),
+      checks: checks.get(m.id) ?? [],
+      coinAdjustments: adjustments.get(m.id) ?? [],
+      checkable: checkable.get(m.id) ?? { letters: 0, words: 0, spelling: 0 },
     }));
   const guardians = members.rows
     .filter((m) => m.role !== 'student')

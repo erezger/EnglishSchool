@@ -22,6 +22,18 @@ export type StudentSummary = {
   };
   grade: number | null;
   rewards: { id: string; title: string; cost: number }[];
+  checks: {
+    id: string;
+    status: string;
+    total: number;
+    score: number | null;
+    coinsAwarded: number | null;
+    createdAt: string;
+    finishedAt: string | null;
+    failed: string[];
+  }[];
+  coinAdjustments: { amount: number; reason: string; createdAt: string; seen: boolean }[];
+  checkable: { letters: number; words: number; spelling: number };
 };
 
 export type Guardian = {

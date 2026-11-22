@@ -653,6 +653,77 @@ async function switchUser() {
 }
 window.switchUser = switchUser;
 
+/* ---------- notices from parents: waiting check + coin changes ---------- */
+async function loadNotices() {
+    try {
+        const res = await fetchWithTimeout('/api/me/notices');
+        if (res.status === 401) return handleLoggedOut();
+        if (!res.ok) return;
+        const json = await res.json();
+        renderCheckBanner(json.openCheck);
+        if (Array.isArray(json.adjustments) && json.adjustments.length) showCoinAdjustments(json.adjustments);
+    } catch (err) {
+        // not critical
+    }
+}
+
+function renderCheckBanner(openCheck) {
+    let el = document.getElementById('check-banner');
+    if (!openCheck) {
+        if (el) el.remove();
+        return;
+    }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'check-banner';
+        const wrapper = document.getElementById('app-wrapper');
+        wrapper.insertBefore(el, wrapper.children[1] || null);
+    }
+    el.innerHTML = `
+        <div class="mb-5 bg-gradient-to-l from-amber-100 to-yellow-50 border-2 border-amber-300 rounded-3xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 animate-pop">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">📝</span>
+                <div>
+                    <div class="font-black text-amber-950">יש לך מבחן מההורים!</div>
+                    <div class="text-xs text-amber-900">${Number(openCheck.total)} שאלות על מה שכבר למדת – בלי רמזים</div>
+                </div>
+            </div>
+            <button onclick="goToPractice('/practice/check')" class="bg-amber-500 hover:bg-amber-600 text-white font-black px-5 py-2.5 rounded-2xl shadow-sm cursor-pointer">מתחילים 🚀</button>
+        </div>
+    `;
+}
+
+function showCoinAdjustments(list) {
+    if (document.getElementById('coin-notice')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'coin-notice';
+    overlay.className = 'fixed inset-0 z-[60] bg-slate-900/60 flex items-center justify-center p-4';
+    overlay.innerHTML = `
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center animate-pop" role="dialog" aria-modal="true">
+            <div class="text-5xl mb-2">🪙</div>
+            <h3 class="text-xl font-black text-slate-800 mb-3">הודעה מההורים</h3>
+            <div class="space-y-2 mb-5">
+                ${list.map(a => `
+                    <div class="rounded-2xl border px-3 py-2 ${a.amount >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}">
+                        <div class="font-black ${a.amount >= 0 ? 'text-emerald-700' : 'text-rose-700'}">${a.amount >= 0 ? '+' : ''}${Number(a.amount)} מטבעות</div>
+                        <div class="text-sm text-slate-700">${escapeHtml(a.reason)}</div>
+                    </div>`).join('')}
+            </div>
+            <button id="coin-notice-ok" class="px-8 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black cursor-pointer">הבנתי 👍</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('coin-notice-ok').onclick = () => {
+        overlay.remove();
+        fetch('/api/me/notices/seen', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: list.map(a => a.id) })
+        }).catch(() => {});
+        pollServerOnce(); // pick up the new coin balance right away
+    };
+}
+
 window.goToPractice = async function(path) {
     try {
         if (hasUnsavedChanges || dirtyWhileOffline) await Promise.race([pushProgress(), new Promise(r => setTimeout(r, 3000))]);
@@ -2500,6 +2571,8 @@ function bootstrapApp() {
     initCloudStorage();
     selectLevel(state.currentLevelId || 1);
     showToast(`שלום ${CURRENT_USER.displayName}! 🌟`, '👋');
+    loadNotices();
+    setInterval(() => { if (document.visibilityState === 'visible') loadNotices(); }, 60000);
 }
 
 if (document.readyState === 'loading') {
