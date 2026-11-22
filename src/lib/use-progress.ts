@@ -24,8 +24,26 @@ export function useProgress(initial: { data: ProgressData; version: number }) {
 
   const current = () => pending.current.reduce((d, op) => op(d), base.current.data);
 
-  const flush = useCallback(async (): Promise<void> => {
-    if (saving.current || pending.current.length === 0) return;
+  const inflight = useRef<Promise<void> | null>(null);
+
+  /**
+   * Sends pending changes. If a save is already running, waits for it and then sends
+   * whatever is still pending — so `await flush()` means "everything is on the server"
+   * (or the save failed), which callers rely on before navigating away.
+   */
+  const flush = useCallback((): Promise<void> => {
+    if (inflight.current) {
+      return inflight.current.then(() => (pending.current.length && !retryTimer.current ? flush() : undefined));
+    }
+    if (pending.current.length === 0) return Promise.resolve();
+    inflight.current = saveLoop().finally(() => {
+      inflight.current = null;
+    });
+    return inflight.current;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function saveLoop(): Promise<void> {
     saving.current = true;
     setStatus('saving');
     try {
@@ -64,7 +82,7 @@ export function useProgress(initial: { data: ProgressData; version: number }) {
     } finally {
       saving.current = false;
     }
-  }, []);
+  }
 
   const mutate = useCallback(
     (op: Op) => {
