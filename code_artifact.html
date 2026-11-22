@@ -1,0 +1,3380 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אנגלית בקליק PRO | לומדים לקרוא, להבין ולהרוויח</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Rubik (Hebrew) & Nunito (Crystal-clear English lowercase a, g, b, d, p, q) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        hebrew: ['Rubik', 'sans-serif'],
+                        english: ['Nunito', 'sans-serif'],
+                    },
+                    animation: {
+                        'pop': 'pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        'shake': 'shake 0.4s ease-in-out',
+                        'coin-float': 'coinFloat 1.1s ease-out forwards',
+                        'bounce-soft': 'bounceSoft 2.5s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        pop: {
+                            '0%': { transform: 'scale(0.85)' },
+                            '50%': { transform: 'scale(1.08)' },
+                            '100%': { transform: 'scale(1)' },
+                        },
+                        shake: {
+                            '0%, 100%': { transform: 'translateX(0)' },
+                            '20%, 60%': { transform: 'translateX(-6px)' },
+                            '40%, 80%': { transform: 'translateX(6px)' },
+                        },
+                        coinFloat: {
+                            '0%': { transform: 'translateY(0) scale(0.8)', opacity: '1' },
+                            '60%': { transform: 'translateY(-42px) scale(1.15)', opacity: '1' },
+                            '100%': { transform: 'translateY(-70px) scale(0.95)', opacity: '0' },
+                        },
+                        bounceSoft: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 50%, #ecfeff 100%);
+            --banner-gradient: linear-gradient(270deg, #4f46e5 0%, #7c3aed 100%);
+            --accent-color: #4f46e5;
+            --card-surface: rgba(255, 255, 255, 0.94);
+            --text-main: #1e293b;
+        }
+
+        /* Unlockable Shop Themes */
+        body.theme-classic {
+            --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 50%, #ecfeff 100%);
+            --banner-gradient: linear-gradient(270deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        body.theme-unicorn {
+            --bg-gradient: linear-gradient(135deg, #fdf2f8 0%, #fae8ff 50%, #eff6ff 100%);
+            --banner-gradient: linear-gradient(270deg, #ec4899 0%, #a855f7 100%);
+        }
+        body.theme-ocean {
+            --bg-gradient: linear-gradient(135deg, #ecfeff 0%, #e0f2fe 50%, #f0fdfa 100%);
+            --banner-gradient: linear-gradient(270deg, #0284c7 0%, #0d9488 100%);
+        }
+        body.theme-space {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #312e81 100%);
+            --banner-gradient: linear-gradient(270deg, #3730a3 0%, #6d28d9 100%);
+        }
+        body.theme-neon {
+            --bg-gradient: linear-gradient(135deg, #18181b 0%, #2e1065 50%, #064e3b 100%);
+            --banner-gradient: linear-gradient(270deg, #db2777 0%, #059669 100%);
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.5s ease;
+        }
+
+        .theme-banner {
+            background: var(--banner-gradient);
+        }
+
+        .en-text {
+            font-family: 'Nunito', sans-serif;
+            direction: ltr;
+            unicode-bidi: isolate;
+        }
+
+        .tile-glow {
+            transform: scale(1.14) translateY(-6px);
+            background-color: #fef08a !important;
+            border-color: #f59e0b !important;
+            color: #92400e !important;
+            box-shadow: 0 12px 24px -6px rgba(245, 158, 11, 0.45);
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 120;
+        }
+
+        /* Floating Coin Popup */
+        .floating-coin {
+            position: fixed;
+            z-index: 130;
+            pointer-events: none;
+            font-weight: 900;
+            font-size: 1.35rem;
+            color: #b45309;
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 6px 14px;
+            border-radius: 999px;
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.35);
+            animation: coinFloat 1.15s ease-out forwards;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="theme-classic text-slate-800 selection:bg-indigo-200 selection:text-indigo-900">
+
+    <!-- Celebration Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-container" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 translate-y-4">
+        <div class="bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl font-semibold text-sm sm:text-base flex items-center gap-2 border border-slate-700">
+            <span id="toast-icon">✨</span>
+            <span id="toast-text">הודעה</span>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         PROFILE SELECTION SCREEN (AVIGAIL & RANI)
+         ========================================================================= -->
+    <div id="profile-screen" class="fixed inset-0 z-40 overflow-y-auto bg-gradient-to-br from-indigo-50 via-purple-50 to-teal-50 flex flex-col items-center justify-center p-4 sm:p-6">
+        <div class="max-w-3xl w-full text-center animate-pop">
+            <div class="inline-flex items-center gap-2 bg-white/90 border border-indigo-200 px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold text-indigo-700 shadow-xs mb-4">
+                <span>✨</span>
+                <span>אנגלית בקליק PRO</span>
+                <span id="profile-cloud-status" class="text-emerald-600">• מחובר</span>
+            </div>
+
+            <h1 class="text-3xl sm:text-5xl font-black text-slate-800 mb-2">
+                מי לומדת אנגלית עכשיו? 🌟
+            </h1>
+            <p class="text-sm sm:text-base text-slate-600 font-medium mb-7">
+                בחרי את השם שלך כדי להמשיך בדיוק מאיפה שעצרת ולצבור מטבעות לפרסים!
+            </p>
+
+            <!-- Two Sisters Profile Cards -->
+            <div id="profile-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-7">
+                <!-- Populated dynamically by JS -->
+            </div>
+
+            <!-- Parent Controls Button on Profile Screen -->
+            <button onclick="openParentModal()" class="inline-flex items-center gap-2 bg-white/90 hover:bg-white border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm px-5 py-2.5 rounded-2xl shadow-xs transition active:scale-95 cursor-pointer">
+                <span>⚙️</span>
+                <span>הורים / איפוס נתונים</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="app-wrapper" class="hidden max-w-6xl mx-auto px-3 sm:px-5 py-4 sm:py-6 pb-20">
+
+        <!-- TOP DASHBOARD HEADER -->
+        <header class="bg-white/95 backdrop-blur-md rounded-3xl shadow-md border border-indigo-100/80 p-4 sm:p-5 mb-5">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+
+                <!-- Brand + Active Girl Profile, Avatar & Switch Button -->
+                <div class="flex items-center gap-3.5">
+                    <button onclick="openShopModal('app')" class="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-3xl shadow-md hover:scale-105 transition cursor-pointer shrink-0" title="החליפי דמות בחנות">
+                        <span id="header-avatar">👧🏻</span>
+                        <span id="header-pet" class="absolute -bottom-1.5 -left-1.5 bg-white rounded-full w-7 h-7 flex items-center justify-center text-base shadow border border-slate-200 animate-bounce-soft" title="חיית המחמד שלך">🐶</span>
+                    </button>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-l from-indigo-700 to-purple-600 bg-clip-text text-transparent">
+                                שלום, <span id="header-profile-name">אביגיל</span>!
+                            </h1>
+                            <button onclick="openProfileScreen()" class="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer">
+                                🔄 החלף משתמשת
+                            </button>
+                            <span id="save-status-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                נשמר ✓
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+                            לומדים שמות אותיות, צלילים, קוראים מהר וצוברים כסף לפרסים! 🚀
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Wallet, Streak, ABC Board, Shop & Controls -->
+                <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                    <!-- English Bank Wallet -->
+                    <button id="wallet-pill" onclick="openShopModal('parent')" class="flex items-center gap-2 bg-gradient-to-l from-amber-100 to-yellow-50 hover:from-amber-200 hover:to-yellow-100 border-2 border-amber-300 text-amber-950 px-3.5 py-2 rounded-2xl font-black text-base shadow-sm transition active:scale-95 cursor-pointer" title="בנק האנגלית שלך - לחצי לפתיחת הפרסים">
+                        <span class="text-xl">🪙</span>
+                        <span id="stat-coins">0</span>
+                        <span class="text-xs font-bold text-amber-700">מטבעות</span>
+                    </button>
+
+                    <!-- Daily Streak -->
+                    <div class="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 px-3 py-2 rounded-2xl font-extrabold text-sm" title="רצף ימי למידה">
+                        <span>🔥</span>
+                        <span id="stat-streak">1</span>
+                        <span class="text-xs font-semibold hidden sm:inline">ימים</span>
+                    </div>
+
+                    <!-- Full ABC Board Quick Access -->
+                    <button onclick="openAbcModal()" class="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 px-3.5 py-2 rounded-2xl font-extrabold text-xs sm:text-sm transition active:scale-95 cursor-pointer" title="לוח כל 26 האותיות A-Z">
+                        <span>🔤</span>
+                        <span>לוח ABC</span>
+                    </button>
+
+                    <!-- Rewards Shop Button -->
+                    <button onclick="openShopModal('app')" class="flex items-center gap-1.5 bg-gradient-to-l from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-3.5 py-2 rounded-2xl font-extrabold text-xs sm:text-sm shadow-sm transition active:scale-95 cursor-pointer">
+                        <span>🛍️</span>
+                        <span>חנות פרסים</span>
+                    </button>
+
+                    <!-- Speech Speed Toggle -->
+                    <button onclick="toggleSpeechSpeed()" class="flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 px-3 py-2 rounded-2xl font-bold text-xs sm:text-sm transition active:scale-95 cursor-pointer" title="מהירות הקראה">
+                        <span id="speed-icon">🐇</span>
+                        <span id="speed-label" class="hidden sm:inline">קצב רגיל</span>
+                    </button>
+
+                    <!-- Voice Settings Button -->
+                    <button onclick="openVoiceModal()" class="flex items-center justify-center w-10 h-10 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-2xl transition active:scale-95 cursor-pointer" title="בחירת קול הקראה באנגלית">
+                        <span class="text-lg">🎙️</span>
+                    </button>
+
+                    <!-- SFX Mute Toggle -->
+                    <button onclick="toggleSfxMute()" class="flex items-center justify-center w-10 h-10 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-2xl transition active:scale-95 cursor-pointer" title="השתק/הפעל צלילי משחק">
+                        <span id="sfx-icon" class="text-lg">🔊</span>
+                    </button>
+
+                    <!-- Parent Control & Reset Button -->
+                    <button onclick="openParentModal()" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-2xl font-bold text-xs transition active:scale-95 cursor-pointer" title="הגדרות הורים ואיפוס">
+                        <span>⚙️</span>
+                        <span class="hidden sm:inline">הורים / איפוס</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Stats Strip -->
+            <div class="mt-4 pt-3.5 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                <!-- Letters Mastered -->
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm shrink-0">Aa</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                            <span>אותיות בשליטה</span>
+                            <span id="stat-letters-text" class="text-indigo-600">0 / 26</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div id="bar-letters" class="h-full bg-indigo-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Words Read -->
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-black text-base shrink-0">📖</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                            <span>מילים שקראתי</span>
+                            <span id="stat-words-text" class="text-teal-600">0 מילים</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div id="bar-words" class="h-full bg-teal-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Levels Completed -->
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-black text-base shrink-0">🏆</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                            <span>שלבים שהושלמו</span>
+                            <span id="stat-levels-text" class="text-amber-600">0 / 7</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div id="bar-levels" class="h-full bg-amber-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 7-LEVEL SELECTOR STRIP -->
+        <section class="mb-5">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <h2 class="text-xs sm:text-sm font-extrabold text-slate-600 bg-white/80 backdrop-blur-xs px-3 py-1 rounded-full shadow-2xs">
+                    🗺️ מסלול הקריאה המהיר (7 שלבים):
+                </h2>
+                <span id="mistake-badge-top" onclick="switchTab('challenges')" class="hidden cursor-pointer text-xs font-extrabold bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1 rounded-full transition">
+                    🎯 יש לך <span id="mistake-count-top">0</span> מילים בבנק החיזוק (2x מטבעות!)
+                </span>
+            </div>
+
+            <div id="level-selector" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                <!-- Dynamically populated -->
+            </div>
+        </section>
+
+        <!-- MAIN WORKSPACE CARD -->
+        <main class="bg-white/95 backdrop-blur-md rounded-3xl shadow-lg border border-indigo-100/80 overflow-hidden">
+
+            <!-- Dynamic Theme Level Banner -->
+            <div class="theme-banner text-white p-4 sm:p-6 transition-all duration-500">
+                <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span id="current-level-badge" class="bg-white/20 backdrop-blur-xs text-xs font-extrabold px-3 py-1 rounded-full">שלב 1</span>
+                            <span id="current-level-done-badge" class="hidden bg-emerald-400 text-emerald-950 text-xs font-black px-2.5 py-1 rounded-full">✓ הושלם!</span>
+                        </div>
+                        <h2 id="current-level-title" class="text-2xl sm:text-3xl font-black">מתחילים לקרוא!</h2>
+                        <p id="current-level-subtitle" class="text-white/85 text-sm sm:text-base mt-0.5 font-medium en-text tracking-wider">A • B • S • T • P</p>
+                    </div>
+
+                    <!-- 5 Learning Modes Tabs -->
+                    <div id="main-tabs-bar" class="flex flex-wrap sm:flex-nowrap bg-black/20 p-1.5 rounded-2xl gap-1">
+                        <button onclick="switchTab('learn')" id="tab-btn-learn" class="flex-1 sm:flex-none px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap">
+                            <span>🔤</span><span>אותיות</span>
+                        </button>
+                        <button onclick="switchTab('blend')" id="tab-btn-blend" class="flex-1 sm:flex-none px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap">
+                            <span>🧩</span><span>מכונת מילים</span>
+                        </button>
+                        <button onclick="switchTab('spell')" id="tab-btn-spell" class="flex-1 sm:flex-none px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap">
+                            <span>✍️</span><span>בנה מילה</span>
+                        </button>
+                        <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="flex-1 sm:flex-none px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap">
+                            <span>🎯</span><span>חידון</span>
+                        </button>
+                        <button onclick="switchTab('challenges')" id="tab-btn-challenges" class="flex-1 sm:flex-none px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap">
+                            <span>⚡</span><span>אתגרים</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: LEARN LETTERS (FLASHCARDS + DUAL ABC/PHONICS + GENIUS BONUS) -->
+            <div id="tab-learn" class="p-4 sm:p-7">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="text-lg sm:text-xl font-extrabold text-slate-800">כרטיסיות אותיות חכמות (ABC + צליל קריאה)</h3>
+                        <p class="text-sm text-slate-500">
+                            למדי גם את <strong>שם האות</strong> וגם את <strong>הצליל שלה</strong>, וסמני "למדתי ✓" כדי להרוויח <strong class="text-amber-600">+2 🪙</strong>!
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
+                        <button onclick="openAbcModal()" class="bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 font-extrabold text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl transition flex items-center gap-1.5 cursor-pointer">
+                            <span>🔤</span>
+                            <span>לוח ה-ABC המלא</span>
+                        </button>
+                        <button onclick="switchTab('blend')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-2xl transition flex items-center gap-1.5 cursor-pointer">
+                            <span>עברי למכונת המילים</span>
+                            <span>⬅️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Clear Mini-Explainer Badge -->
+                <div class="mb-5 bg-gradient-to-l from-indigo-50 via-white to-emerald-50 border border-indigo-200/80 rounded-2xl px-4 py-3 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm font-bold text-slate-700">
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-full bg-indigo-600 inline-block"></span>
+                        <strong class="text-indigo-800">השם</strong> = איך קוראים לה ב-ABC (למשל B = בִּי)
+                    </span>
+                    <span class="text-slate-300 hidden sm:inline">|</span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span>
+                        <strong class="text-emerald-800">הצליל</strong> = איך היא נשמעת במילה (למשל B = בּ)
+                    </span>
+                </div>
+
+                <div id="letters-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Flashcards injected by JS -->
+                </div>
+            </div>
+
+            <!-- TAB 2: WORD BLENDER MACHINE -->
+            <div id="tab-blend" class="hidden p-4 sm:p-7">
+                <div class="max-w-3xl mx-auto">
+                    <div class="text-center mb-5">
+                        <h3 class="text-xl font-extrabold text-slate-800">🧩 מכונת חיבור המילים</h3>
+                        <p class="text-sm text-slate-500 mt-1">לחצי על כל אות משמאל לימין לשמוע את הצליל, ואז לחצי על <strong>"חבר למילה!"</strong> (+3 🪙 לכל מילה חדשה)</p>
+                    </div>
+
+                    <!-- Quick Word Selector Pills -->
+                    <div id="blender-word-pills" class="flex flex-wrap justify-center gap-2 mb-6" dir="ltr"></div>
+
+                    <!-- Blender Stage -->
+                    <div class="bg-gradient-to-b from-slate-50 to-indigo-50/70 border-2 border-indigo-100 rounded-3xl p-5 sm:p-8 text-center">
+                        <div class="flex items-center justify-between text-xs font-bold text-indigo-500 mb-4">
+                            <span id="blender-read-badge" class="opacity-0 bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">✓ כבר קראת!</span>
+                            <span class="flex items-center gap-1">קוראים משמאל לימין ➡️</span>
+                            <span id="blender-counter" class="text-slate-400">1 / 12</span>
+                        </div>
+
+                        <!-- Interactive Letter Tiles -->
+                        <div id="blender-tiles" class="flex items-center justify-center gap-2.5 sm:gap-4 my-5 flex-wrap" dir="ltr"></div>
+
+                        <!-- Primary Actions -->
+                        <div class="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <button onclick="animateAndBlendWord()" class="w-full sm:w-auto bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black text-lg px-8 py-4 rounded-2xl shadow-lg shadow-indigo-200 transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+                                <span>🔊</span>
+                                <span>חבר למילה!</span>
+                            </button>
+                            <button onclick="toggleBlenderMeaning()" id="btn-toggle-meaning" class="w-full sm:w-auto bg-white hover:bg-amber-50 border-2 border-amber-300 text-amber-800 font-bold text-base px-5 py-3.5 rounded-2xl transition active:scale-95 cursor-pointer">
+                                👀 גלה פירוש
+                            </button>
+                        </div>
+
+                        <!-- Meaning Reveal Box -->
+                        <div id="blender-meaning-box" class="mt-6 min-h-[76px] flex items-center justify-center"></div>
+
+                        <!-- Prev / Next Navigation -->
+                        <div class="flex items-center justify-between mt-6 pt-5 border-t border-indigo-100">
+                            <button onclick="stepBlenderWord(-1)" class="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-sm transition active:scale-95 cursor-pointer">
+                                ➡️ מילה קודמת
+                            </button>
+                            <button onclick="switchTab('spell')" class="hidden sm:inline-flex bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer">
+                                ✍️ מוכנה לבנות מילים משמיעה?
+                            </button>
+                            <button onclick="stepBlenderWord(1)" class="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-sm transition active:scale-95 cursor-pointer">
+                                מילה הבאה ⬅️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: SPELLING BUILDER (LISTEN & BUILD WORD) -->
+            <div id="tab-spell" class="hidden p-4 sm:p-7">
+                <div id="spell-container" class="max-w-2xl mx-auto">
+                    <!-- Rendered dynamically by JS -->
+                </div>
+            </div>
+
+            <!-- TAB 4: SMART QUIZ -->
+            <div id="tab-quiz" class="hidden p-4 sm:p-7">
+                <div id="quiz-container" class="max-w-2xl mx-auto">
+                    <!-- Rendered dynamically by JS -->
+                </div>
+            </div>
+
+            <!-- TAB 5: MISTAKE BANK & b/d/p/q CHALLENGE -->
+            <div id="tab-challenges" class="hidden p-4 sm:p-7">
+                <div class="max-w-4xl mx-auto space-y-8">
+                    <!-- Section A: Personal Mistake Bank -->
+                    <div class="bg-gradient-to-br from-rose-50/90 to-amber-50/70 border-2 border-rose-200 rounded-3xl p-5 sm:p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                            <div>
+                                <div class="inline-flex items-center gap-1.5 bg-rose-100 text-rose-800 text-xs font-extrabold px-3 py-1 rounded-full mb-1">
+                                    <span>🎯 בנק החיזוק האישי</span>
+                                    <span class="bg-amber-300 text-amber-950 px-2 py-0.5 rounded-full">2x מטבעות!</span>
+                                </div>
+                                <h3 class="text-xl font-black text-slate-800">מילים שמתאמנים עליהן עוד קצת</h3>
+                                <p class="text-sm text-slate-600">כל מילה שטעית בה נשמרת כאן אוטומטית. כשתעני עליה נכון היא תיעלם מהבנק ותקבלי מטבעות כפולים!</p>
+                            </div>
+                            <button id="btn-start-mistake-quiz" onclick="startMistakePractice()" class="bg-rose-600 hover:bg-rose-700 text-white font-extrabold px-5 py-3 rounded-2xl shadow-md transition active:scale-95 cursor-pointer shrink-0">
+                                🚀 תרגלי את בנק החיזוק
+                            </button>
+                        </div>
+                        <div id="mistake-bank-content">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Section B: b / d / p / q Master Challenge -->
+                    <div class="bg-gradient-to-br from-teal-50/80 to-emerald-50/70 border-2 border-teal-200 rounded-3xl p-5 sm:p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                            <div>
+                                <span class="bg-teal-100 text-teal-800 text-xs font-extrabold px-3 py-1 rounded-full">אתגר אלופות ⚡</span>
+                                <h3 class="text-xl sm:text-2xl font-black text-teal-950 mt-1">אלופת ה- <span class="en-text bg-white px-2 rounded-lg border border-teal-200">b / d / p / q</span></h3>
+                            </div>
+                            <div class="bg-white border border-teal-200 rounded-2xl px-4 py-2 text-center self-start sm:self-auto">
+                                <div class="text-[11px] text-slate-500 font-bold">שיא אישי</div>
+                                <div id="bd-best-score" class="text-xl font-black text-teal-700">0 / 10</div>
+                            </div>
+                        </div>
+
+                        <!-- Visual Tricks -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <!-- Bed Trick SVG -->
+                            <div class="bg-white border border-amber-200 rounded-2xl p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-extrabold text-amber-900">🛏️ טריק המיטה (bed)</h4>
+                                    <button onclick="speakWord('bed')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold px-2.5 py-1 rounded-lg cursor-pointer">🔊 bed</button>
+                                </div>
+                                <p class="text-xs text-slate-600 mb-3">
+                                    בצד שמאל משענת הראש (<strong class="en-text text-indigo-700">b</strong>) ובצד ימין משענת הרגליים (<strong class="en-text text-teal-700">d</strong>).
+                                </p>
+                                <svg viewBox="0 0 260 100" class="w-full max-w-[230px] mx-auto h-auto" aria-label="איור המילה bed בצורת מיטה">
+                                    <rect x="46" y="42" width="38" height="16" rx="8" fill="#bae6fd" stroke="#0284c7" stroke-width="2"/>
+                                    <rect x="86" y="46" width="110" height="22" rx="6" fill="#c7d2fe" stroke="#4f46e5" stroke-width="2"/>
+                                    <line x1="36" y1="82" x2="224" y2="82" stroke="#92400e" stroke-width="6" stroke-linecap="round"/>
+                                    <text x="34" y="78" font-family="Nunito, sans-serif" font-weight="900" font-size="64" fill="#4f46e5">b</text>
+                                    <text x="108" y="78" font-family="Nunito, sans-serif" font-weight="900" font-size="60" fill="#d97706">e</text>
+                                    <text x="174" y="78" font-family="Nunito, sans-serif" font-weight="900" font-size="64" fill="#0d9488">d</text>
+                                </svg>
+                            </div>
+
+                            <!-- p vs q Trick -->
+                            <div class="bg-white border border-purple-200 rounded-2xl p-4 flex flex-col justify-between">
+                                <div>
+                                    <h4 class="font-extrabold text-purple-900 mb-2">👑 טריק ה-<span class="en-text">p</span> וה-<span class="en-text">q</span></h4>
+                                    <p class="text-xs text-slate-600 mb-2">
+                                        <strong class="en-text text-base text-purple-700">p</strong> (פּיצה 🍕): מסתכלת <strong>קדימה</strong> (ימינה) לכיוון האוכל!
+                                    </p>
+                                    <p class="text-xs text-slate-600">
+                                        <strong class="en-text text-base text-rose-600">q</strong> (Queen 👑): המלכה מסתכלת <strong>אחורה</strong> (שמאלה) על הגלימה שלה.
+                                    </p>
+                                </div>
+                                <div class="flex items-center justify-around mt-3 pt-2 border-t border-slate-100" dir="ltr">
+                                    <button onclick="speakPhonics('p')" class="px-4 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-black en-text cursor-pointer">p 🔊</button>
+                                    <span class="text-slate-300 font-bold text-xs">VS</span>
+                                    <button onclick="speakPhonics('q')" class="px-4 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-900 font-black en-text cursor-pointer">q 🔊</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rapid b/d/p/q Game Box -->
+                        <div id="bd-game-area" class="bg-white border-2 border-teal-100 rounded-2xl p-5 text-center"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEVEL 7: SENTENCE READING STUDIO -->
+            <div id="tab-sentences" class="hidden p-4 sm:p-7"></div>
+        </main>
+    </div>
+
+    <!-- =========================================================================
+         MODAL 1: REWARDS SHOP (APP REWARDS + CUSTOM PARENT REWARDS)
+         ========================================================================= -->
+    <div id="shop-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-pop">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-l from-pink-500 via-purple-600 to-indigo-600 text-white p-4 sm:p-5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">🛍️</span>
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black">חנות הפרסים ובנק האנגלית</h2>
+                        <p class="text-xs text-white/85">היתרה שלך: <strong id="shop-balance" class="text-amber-300 text-sm">0 🪙</strong></p>
+                    </div>
+                </div>
+                <button onclick="closeShopModal()" class="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center font-black text-lg cursor-pointer">✕</button>
+            </div>
+
+            <!-- Shop Tabs -->
+            <div class="flex border-b border-slate-200 bg-slate-50 px-4 pt-3 gap-2">
+                <button id="shop-tab-app" onclick="switchShopTab('app')" class="px-4 py-2.5 rounded-t-2xl font-extrabold text-sm transition cursor-pointer">
+                    ✨ פרסים באפליקציה
+                </button>
+                <button id="shop-tab-parent" onclick="switchShopTab('parent')" class="px-4 py-2.5 rounded-t-2xl font-extrabold text-sm transition cursor-pointer">
+                    🎁 פרסים מאבא ואמא
+                </button>
+            </div>
+
+            <!-- Shop Body -->
+            <div id="shop-body" class="p-4 sm:p-6 overflow-y-auto flex-1">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         MODAL 2: VOICE SELECTOR MODAL
+         ========================================================================= -->
+    <div id="voice-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-pop">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-black text-slate-800">🎙️ בחירת קול הקראה באנגלית</h3>
+                <button onclick="closeVoiceModal()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold cursor-pointer">✕</button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">האפליקציה בוחרת אוטומטית את הקול האנגלי הברור ביותר במכשיר. אפשר לבדוק ולבחור קול אחר אם רוצים:</p>
+            <div id="voice-list" class="space-y-2 max-h-60 overflow-y-auto mb-4"></div>
+            <button onclick="speakWord('Hello! You are doing amazing!')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl cursor-pointer transition">
+                🔊 בדקי את הקול הנבחר
+            </button>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         MODAL 3: FULL ABC BOARD (A-Z)
+         ========================================================================= -->
+    <div id="abc-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-pop">
+            <div class="bg-gradient-to-l from-sky-600 to-indigo-600 text-white p-4 sm:p-5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">🔤</span>
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black">לוח ה-ABC המלא (A–Z)</h2>
+                        <p class="text-xs text-white/85">לחצי על כל אות לשמוע את השם שלה ב-ABC או את הצליל שלה לקריאה!</p>
+                    </div>
+                </div>
+                <button onclick="closeAbcModal()" class="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center font-black text-lg cursor-pointer">✕</button>
+            </div>
+
+            <!-- Mode Toggle Bar -->
+            <div class="bg-slate-50 border-b border-slate-200 px-4 py-3 flex flex-wrap items-center justify-center gap-2">
+                <button id="abc-mode-name" onclick="setAbcBoardMode('name')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer">
+                    🔊 שם האות (ב-ABC)
+                </button>
+                <button id="abc-mode-sound" onclick="setAbcBoardMode('sound')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer">
+                    🗣️ צליל האות (לקריאה)
+                </button>
+            </div>
+
+            <!-- 26 Letters Grid -->
+            <div id="abc-board-grid" class="p-4 sm:p-6 overflow-y-auto grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2.5" dir="ltr">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         MODAL 4: PARENT CONTROL & SAFE RESET MODAL
+         ========================================================================= -->
+    <div id="parent-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-pop">
+            <div class="bg-slate-900 text-white p-4 sm:p-5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⚙️</span>
+                    <div>
+                        <h2 class="text-xl font-black">פאנל הורים ואיפוס בטוח</h2>
+                        <p class="text-xs text-slate-300">ניהול פרופילים (אביגיל ורני), איפוס התקדמות ופרסים מותאמים</p>
+                    </div>
+                </div>
+                <button onclick="closeParentModal()" class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center font-black cursor-pointer">✕</button>
+            </div>
+
+            <div id="parent-modal-body" class="p-5 sm:p-6 overflow-y-auto space-y-6">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         MAIN APPLICATION SCRIPT (ES MODULE WITH FIREBASE CLOUD PERSISTENCE)
+         ========================================================================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        /* ==========================================================================
+           1. CURRICULUM DATA: 26 LETTERS (ABC NAME + PHONICS) + 6 DIGRAPHS + GENIUS BONUS
+           ========================================================================== */
+        const LETTER_BANK = {
+            a: { upper: 'A', lower: 'a', hebrewName: 'אֵיי', ttsLetterName: 'Ay', hebrewSound: 'אַה (כמו אֲבא)', trick: 'האות a נראית כמו תפוח קטן (Apple) עם עלה למעלה 🍎', phoneme: 'ah', exampleWord: 'apple', exampleEmoji: '🍎', exampleHebrew: 'תפוח', bonus: { title: 'צליל ארוך (אֵיי) – קסם ה-e!', desc: 'כשיש e בסוף המילה, האות a אומרת את השם שלה: אֵיי! כמו במילה cake (עוגה).', word: 'cake', emoji: '🎂', hebrew: 'עוגה' } },
+            b: { upper: 'B', lower: 'b', hebrewName: 'בִּי', ttsLetterName: 'Bee', hebrewSound: 'בּ (כמו בּלון)', trick: 'זוכרת את המיטה (bed)? ל-b יש מקל בצד שמאל ובטן קדימה 🛏️', phoneme: 'buh', exampleWord: 'bat', exampleEmoji: '🦇', exampleHebrew: 'עטלף' },
+            s: { upper: 'S', lower: 's', hebrewName: 'אֶס', ttsLetterName: 'Ess', hebrewSound: 'ססס (כמו נחש)', trick: 'האות S מתפתלת בדיוק כמו נחש (Snake) שעושה ססס! 🐍', phoneme: 'sss', exampleWord: 'sun', exampleEmoji: '☀️', exampleHebrew: 'שמש', bonus: { title: 'לפעמים נשמעת כמו ז (z)', desc: 'בסוף מילים רבות או בין תנועות, s יכולה להישמע כמו ז, למשל במילה rose (ורד).', word: 'rose', emoji: '🌹', hebrew: 'ורד' } },
+            t: { upper: 'T', lower: 't', hebrewName: 'טִי', ttsLetterName: 'Tee', hebrewSound: 'ט (כמו טלפון)', trick: 'האות t נראית כמו ברז (Tap) שמוציא מים: ט-ט-ט 🚰', phoneme: 'tuh', exampleWord: 'tap', exampleEmoji: '🚰', exampleHebrew: 'ברז' },
+            p: { upper: 'P', lower: 'p', hebrewName: 'פִּי', ttsLetterName: 'Pee', hebrewSound: 'פּ (כמו פּיצה)', trick: 'הראש של p מסתכל קדימה לכיוון הפיצה (Pizza) 🍕', phoneme: 'puh', exampleWord: 'pat', exampleEmoji: '✋', exampleHebrew: 'ליטוף' },
+
+            i: { upper: 'I', lower: 'i', hebrewName: 'אַיי', ttsLetterName: 'Eye', hebrewSound: 'אִי קצר (כמו אִיגלו)', trick: 'האות i היא ילד קטן עם כדור קטן מעל הראש 🧊', phoneme: 'ih', exampleWord: 'igloo', exampleEmoji: '🧊', exampleHebrew: 'איגלו', bonus: { title: 'צליל ארוך (אַיי) – קסם ה-e!', desc: 'כשיש e בסוף המילה, האות i אומרת אַיי! כמו במילה bike (אופניים).', word: 'bike', emoji: '🚲', hebrew: 'אופניים' } },
+            n: { upper: 'N', lower: 'n', hebrewName: 'אֶן', ttsLetterName: 'En', hebrewSound: 'נננ (כמו נמר)', trick: 'האות n נראית כמו גשר קטן או רשת (Net) עם קשת אחת 🌉', phoneme: 'nnn', exampleWord: 'net', exampleEmoji: '🥅', exampleHebrew: 'רשת' },
+            m: { upper: 'M', lower: 'm', hebrewName: 'אֶם', ttsLetterName: 'Em', hebrewSound: 'מממ (כמו ממתק)', trick: 'ל-m יש שתי קשתות כמו שני הרים (Mountains) – מממ טעים! ⛰️', phoneme: 'mmm', exampleWord: 'map', exampleEmoji: '🗺️', exampleHebrew: 'מפה' },
+            d: { upper: 'D', lower: 'd', hebrewName: 'דִי', ttsLetterName: 'Dee', hebrewSound: 'ד (כמו דג)', trick: 'בטריק המיטה (bed), האות d נמצאת בצד ימין עם מקל בסוף 🐶', phoneme: 'duh', exampleWord: 'dog', exampleEmoji: '🐶', exampleHebrew: 'כלב' },
+            g: { upper: 'G', lower: 'g', hebrewName: 'גִ\'י', ttsLetterName: 'Jee', hebrewSound: 'ג (כמו גלידה)', trick: 'ל-g יש זנב מעוגל למטה כמו ידית של ספל או זנב של חתול 🎁', phoneme: 'guh', exampleWord: 'gift', exampleEmoji: '🎁', exampleHebrew: 'מתנה', bonus: { title: 'צליל רך (ג\') לפני e / i / y', desc: 'לפני האותיות e, i, y האות g לפעמים נשמעת כמו ג\', למשל giraffe (ג\'ירפה).', word: 'giraffe', emoji: '🦒', hebrew: 'ג\'ירפה' } },
+
+            o: { upper: 'O', lower: 'o', hebrewName: 'אוֹאוּ', ttsLetterName: 'Oh', hebrewSound: 'אוֹ קצר (כמו אוֹר)', trick: 'הפה נהיה עגול בדיוק כמו האות O כשאומרים אוֹ! 😮', phoneme: 'aw', exampleWord: 'octopus', exampleEmoji: '🐙', exampleHebrew: 'תמנון', bonus: { title: 'צליל ארוך (אוֹאוּ) – קסם ה-e!', desc: 'כשיש e בסוף המילה, האות o אומרת את השם שלה: אוֹאוּ! כמו במילה home (בית).', word: 'home', emoji: '🏠', hebrew: 'בית' } },
+            c: { upper: 'C', lower: 'c', hebrewName: 'סִי', ttsLetterName: 'See', hebrewSound: 'ק (כמו קפה)', trick: 'האות c נראית כמו עוגייה (Cookie) שמישהו נתן בה ביס 🍪', phoneme: 'kuh', exampleWord: 'cat', exampleEmoji: '🐱', exampleHebrew: 'חתול', bonus: { title: 'צליל ס\' לפני e / i / y', desc: 'כשאחרי c מגיעות האותיות e, i או y, היא נשמעת כמו ס\'! למשל city (עיר).', word: 'city', emoji: '🏙️', hebrew: 'עיר' } },
+            k: { upper: 'K', lower: 'k', hebrewName: 'קֵיי', ttsLetterName: 'Kay', hebrewSound: 'ק (כמו קנגורו)', trick: 'האות k מרימה רגל בבעיטה (Kick) – צליל ק חזק! 🦘', phoneme: 'kuh', exampleWord: 'kid', exampleEmoji: '🧒', exampleHebrew: 'ילד' },
+            e: { upper: 'E', lower: 'e', hebrewName: 'אִי', ttsLetterName: 'Ee', hebrewSound: 'אֶה (כמו אֶגוז)', trick: 'האות e נראית כמו ביצה (Egg) שנשברה קצת באמצע 🥚', phoneme: 'eh', exampleWord: 'egg', exampleEmoji: '🥚', exampleHebrew: 'ביצה', bonus: { title: 'צליל ארוך (אִי) כמו במילה me', desc: 'במילים קצרות שמסתיימות ב-e או כשיש ee, שומעים אִי ארוך! למשל me (אותי/אני).', word: 'me', emoji: '🙋‍♀️', hebrew: 'אני / אותי' } },
+            r: { upper: 'R', lower: 'r', hebrewName: 'אָאר', ttsLetterName: 'Are', hebrewSound: 'ררר (רכה, כמו רדיו)', trick: 'האות r היא כמו כלבלב קטן שנוהם בעדינות ררר (Run!) 🏃', phoneme: 'rrr', exampleWord: 'red', exampleEmoji: '🔴', exampleHebrew: 'אדום' },
+
+            h: { upper: 'H', lower: 'h', hebrewName: 'אֵייץ\'', ttsLetterName: 'Aitch', hebrewSound: 'ה (נשיפה רכה, כמו הר)', trick: 'האות h נראית כמו כיסא שיושבים עליו אחרי ריצה ונושפים ההה 🪑', phoneme: 'huh', exampleWord: 'hat', exampleEmoji: '🎩', exampleHebrew: 'כובע' },
+            l: { upper: 'L', lower: 'l', hebrewName: 'אֶל', ttsLetterName: 'Ell', hebrewSound: 'ללל (כמו לימון)', trick: 'האות l היא מקל ארוך וישר כמו סוכרייה על מקל (Lollipop) 🍭', phoneme: 'lll', exampleWord: 'leg', exampleEmoji: '🦵', exampleHebrew: 'רגל' },
+            f: { upper: 'F', lower: 'f', hebrewName: 'אֶף', ttsLetterName: 'Eff', hebrewSound: 'פפפ רפה (כמו פרח)', trick: 'האות f נראית כמו פרח גבוה (Flower) שמתכופף ברוח 🌸', phoneme: 'fff', exampleWord: 'fan', exampleEmoji: '🪭', exampleHebrew: 'מאוורר' },
+            u: { upper: 'U', lower: 'u', hebrewName: 'יוּ', ttsLetterName: 'You', hebrewSound: 'אַה קצר (כמו אַף)', trick: 'האות u נראית כמו כוס (Cup) או ידית של מטרייה (Umbrella) ☂️', phoneme: 'uh', exampleWord: 'sun', exampleEmoji: '☀️', exampleHebrew: 'שמש', bonus: { title: 'צליל ארוך (יוּ) – קסם ה-e!', desc: 'כשיש e בסוף המילה, האות u אומרת את השם שלה: יוּ! כמו במילה cute (חמוד).', word: 'cute', emoji: '🥰', hebrew: 'חמוד' } },
+            w: { upper: 'W', lower: 'w', hebrewName: 'דַאבֶּל-יוּ', ttsLetterName: 'Double you', hebrewSound: 'ווּ (כמו וואו!)', trick: 'האות w היא כמו שני גלים בים (Water) – אומרים ווּ עם שפתיים עגולות 🌊', phoneme: 'wuh', exampleWord: 'win', exampleEmoji: '🏆', exampleHebrew: 'לנצח' },
+
+            j: { upper: 'J', lower: 'j', hebrewName: 'ג\'ֵיי', ttsLetterName: 'Jay', hebrewSound: 'ג\' (כמו ג\'ינס)', trick: 'האות j קופצת (Jump) ויש לה נקודה מעל הראש 🍓', phoneme: 'juh', exampleWord: 'jam', exampleEmoji: '🍓', exampleHebrew: 'ריבה' },
+            v: { upper: 'V', lower: 'v', hebrewName: 'וִי', ttsLetterName: 'Vee', hebrewSound: 'וְוְוְ (כמו ורד)', trick: 'האות v חדה כמו חרטום של ואן (Van) ומרגישים רטט בשפה 🚐', phoneme: 'vvv', exampleWord: 'van', exampleEmoji: '🚐', exampleHebrew: 'ואן' },
+            y: { upper: 'Y', lower: 'y', hebrewName: 'וַואי', ttsLetterName: 'Why', hebrewSound: 'יְ (כמו יד)', trick: 'האות y מרימה ידיים למעלה ואומרת YES! ✅', phoneme: 'yuh', exampleWord: 'yes', exampleEmoji: '✅', exampleHebrew: 'כן', bonus: { title: 'בסוף מילה נשמעת אִי או אַיי', desc: 'בסוף מילה ארוכה y נשמעת אִי (happy – שמח), ובמילה קצרה אַיי (sky – שמיים).', word: 'happy', emoji: '😊', hebrew: 'שמח' } },
+            z: { upper: 'Z', lower: 'z', hebrewName: 'זִי', ttsLetterName: 'Zee', hebrewSound: 'זזז (כמו זבוב)', trick: 'האות z נראית כמו זיגזג של רוכסן (Zip) ⚡', phoneme: 'zzz', exampleWord: 'zip', exampleEmoji: '🤐', exampleHebrew: 'רוכסן' },
+            x: { upper: 'X', lower: 'x', hebrewName: 'אֶקס', ttsLetterName: 'Ex', hebrewSound: 'קס (כמו בוקס)', trick: 'האות x היא איקס של תיבת אוצר (Box) ונשמעת כמו ק+ס 📦', phoneme: 'ks', exampleWord: 'box', exampleEmoji: '📦', exampleHebrew: 'קופסה' },
+            q: { upper: 'Q', lower: 'q', hebrewName: 'קְיוּ', ttsLetterName: 'Cue', hebrewSound: 'קוו (כמו Queen)', trick: 'המלכה q תמיד מסתכלת אחורה ואוהבת שהאות u הולכת איתה 👑', phoneme: 'kwuh', exampleWord: 'queen', exampleEmoji: '👑', exampleHebrew: 'מלכה' },
+
+            // Level 6 Digraphs
+            sh: { upper: 'SH', lower: 'sh', hebrewName: 'אֶס + אֵייץ\'', ttsLetterName: 'Ess Aitch', hebrewSound: 'ששש (שקט!)', trick: 'כש-s ו-h ביחד, הן שמות אצבע על הפה ואומרות ששש! 🤫', phoneme: 'shhh', exampleWord: 'ship', exampleEmoji: '🚢', exampleHebrew: 'אונייה' },
+            ch: { upper: 'CH', lower: 'ch', hebrewName: 'סִי + אֵייץ\'', ttsLetterName: 'See Aitch', hebrewSound: 'צ\' (כמו צ\'יפס)', trick: 'הצירוף ch נשמע כמו אפצ\'י או כמו צ\'יפס פריך! 🍟', phoneme: 'chuh', exampleWord: 'chip', exampleEmoji: '🍟', exampleHebrew: 'צ\'יפס' },
+            th: { upper: 'TH', lower: 'th', hebrewName: 'טִי + אֵייץ\'', ttsLetterName: 'Tee Aitch', hebrewSound: 'ת\' (לשון בין השיניים)', trick: 'מוציאים קצה קטן של הלשון בין השיניים ונושפים בעדינות 👅', phoneme: 'thhh', exampleWord: 'thin', exampleEmoji: '📏', exampleHebrew: 'דק' },
+            ck: { upper: 'CK', lower: 'ck', hebrewName: 'סִי + קֵיי', ttsLetterName: 'See Kay', hebrewSound: 'ק חזקה (בסוף מילה)', trick: 'החברות c ו-k אוהבות לעמוד בסוף מילה ולעשות יחד צליל ק אחד חזק! 🦆', phoneme: 'kuh', exampleWord: 'duck', exampleEmoji: '🦆', exampleHebrew: 'ברווז' },
+            ee: { upper: 'EE', lower: 'ee', hebrewName: 'דַאבֶּל אִי', ttsLetterName: 'Double Ee', hebrewSound: 'אִי ארוך (כמו עץ)', trick: 'שתי אותיות e תאומות שרות יחד אִיייי ארוך כמו דבורה (bee)! 🐝', phoneme: 'eee', exampleWord: 'tree', exampleEmoji: '🌳', exampleHebrew: 'עץ' },
+            oo: { upper: 'OO', lower: 'oo', hebrewName: 'דַאבֶּל אוֹאוּ', ttsLetterName: 'Double Oh', hebrewSound: 'אוּ (כמו ירח)', trick: 'שני עיגולים כמו משקפת שמסתכלים בה על הירח (moon) ואומרים אוּוּ! 🌙', phoneme: 'ooo', exampleWord: 'moon', exampleEmoji: '🌙', exampleHebrew: 'ירח', bonus: { title: 'אוּ קצר (כמו בספר – book)', desc: 'לפעמים oo נשמעת קצרה ורכה יותר, כמו במילה book (ספר) או foot (כף רגל).', word: 'book', emoji: '📖', hebrew: 'ספר' } }
+        };
+
+        const ALPHABET_ORDER = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+        /* ==========================================================================
+           2. 7 GRADED LEVELS (95+ WORDS + 12 REAL SENTENCES)
+           ========================================================================== */
+        const LEVELS = [
+            {
+                id: 1, shortName: 'שלב 1', title: 'מתחילים לקרוא!',
+                letters: ['a', 'b', 's', 't', 'p'],
+                words: [
+                    { word: 'bat', parts: ['b', 'a', 't'], hebrew: 'עטלף', emoji: '🦇' },
+                    { word: 'sat', parts: ['s', 'a', 't'], hebrew: 'ישב', emoji: '🪑' },
+                    { word: 'pat', parts: ['p', 'a', 't'], hebrew: 'ליטוף', emoji: '✋' },
+                    { word: 'tap', parts: ['t', 'a', 'p'], hebrew: 'ברז', emoji: '🚰' },
+                    { word: 'tab', parts: ['t', 'a', 'b'], hebrew: 'לשונית', emoji: '🏷️' },
+                    { word: 'sap', parts: ['s', 'a', 'p'], hebrew: 'שרף עץ', emoji: '🌳' },
+                    { word: 'at', parts: ['a', 't'], hebrew: 'ב- / אצל', emoji: '📍' },
+                    { word: 'past', parts: ['p', 'a', 's', 't'], hebrew: 'עבר', emoji: '⏳' },
+                    { word: 'spat', parts: ['s', 'p', 'a', 't'], hebrew: 'ריב קטן', emoji: '💬' },
+                    { word: 'stab', parts: ['s', 't', 'a', 'b'], hebrew: 'לדקור (במזלג)', emoji: '🍴' }
+                ]
+            },
+            {
+                id: 2, shortName: 'שלב 2', title: 'המילים הראשונות',
+                letters: ['i', 'n', 'm', 'd', 'g'],
+                words: [
+                    { word: 'pin', parts: ['p', 'i', 'n'], hebrew: 'סיכה', emoji: '📌' },
+                    { word: 'sit', parts: ['s', 'i', 't'], hebrew: 'לשבת', emoji: '🪑' },
+                    { word: 'pan', parts: ['p', 'a', 'n'], hebrew: 'מחבת', emoji: '🍳' },
+                    { word: 'map', parts: ['m', 'a', 'p'], hebrew: 'מפה', emoji: '🗺️' },
+                    { word: 'mat', parts: ['m', 'a', 't'], hebrew: 'שטיחון', emoji: '🧶' },
+                    { word: 'man', parts: ['m', 'a', 'n'], hebrew: 'איש', emoji: '👨' },
+                    { word: 'dad', parts: ['d', 'a', 'd'], hebrew: 'אבא', emoji: '👨‍👧' },
+                    { word: 'sad', parts: ['s', 'a', 'd'], hebrew: 'עצוב', emoji: '😢' },
+                    { word: 'pig', parts: ['p', 'i', 'g'], hebrew: 'חזיר', emoji: '🐷' },
+                    { word: 'big', parts: ['b', 'i', 'g'], hebrew: 'גדול', emoji: '🐘' },
+                    { word: 'dig', parts: ['d', 'i', 'g'], hebrew: 'לחפור', emoji: '⛏️' },
+                    { word: 'bag', parts: ['b', 'a', 'g'], hebrew: 'תיק', emoji: '🎒' },
+                    { word: 'nap', parts: ['n', 'a', 'p'], hebrew: 'תנומה', emoji: '😴' },
+                    { word: 'tin', parts: ['t', 'i', 'n'], hebrew: 'קופסת פח', emoji: '🥫' }
+                ]
+            },
+            {
+                id: 3, shortName: 'שלב 3', title: 'תנועות וצלילים',
+                letters: ['o', 'c', 'k', 'e', 'r'],
+                words: [
+                    { word: 'cat', parts: ['c', 'a', 't'], hebrew: 'חתול', emoji: '🐱' },
+                    { word: 'dog', parts: ['d', 'o', 'g'], hebrew: 'כלב', emoji: '🐶' },
+                    { word: 'top', parts: ['t', 'o', 'p'], hebrew: 'פסגה / סביבון', emoji: '🔝' },
+                    { word: 'pot', parts: ['p', 'o', 't'], hebrew: 'סיר', emoji: '🍲' },
+                    { word: 'mop', parts: ['m', 'o', 'p'], hebrew: 'מגב', emoji: '🧹' },
+                    { word: 'bed', parts: ['b', 'e', 'd'], hebrew: 'מיטה', emoji: '🛏️' },
+                    { word: 'red', parts: ['r', 'e', 'd'], hebrew: 'אדום', emoji: '🔴' },
+                    { word: 'net', parts: ['n', 'e', 't'], hebrew: 'רשת', emoji: '🥅' },
+                    { word: 'ten', parts: ['t', 'e', 'n'], hebrew: 'עשר', emoji: '🔟' },
+                    { word: 'pen', parts: ['p', 'e', 'n'], hebrew: 'עט', emoji: '🖊️' },
+                    { word: 'rat', parts: ['r', 'a', 't'], hebrew: 'חולדה', emoji: '🐀' },
+                    { word: 'run', parts: ['r', 'u', 'n'], hebrew: 'לרוץ', emoji: '🏃' },
+                    { word: 'rock', parts: ['r', 'o', 'ck'], hebrew: 'סלע', emoji: '🪨' },
+                    { word: 'kid', parts: ['k', 'i', 'd'], hebrew: 'ילד / ילדה', emoji: '🧒' },
+                    { word: 'kick', parts: ['k', 'i', 'ck'], hebrew: 'לבעוט', emoji: '⚽' }
+                ]
+            },
+            {
+                id: 4, shortName: 'שלב 4', title: 'קריאה שוטפת',
+                letters: ['h', 'l', 'f', 'u', 'w'],
+                words: [
+                    { word: 'hat', parts: ['h', 'a', 't'], hebrew: 'כובע', emoji: '🎩' },
+                    { word: 'hen', parts: ['h', 'e', 'n'], hebrew: 'תרנגולת', emoji: '🐔' },
+                    { word: 'leg', parts: ['l', 'e', 'g'], hebrew: 'רגל', emoji: '🦵' },
+                    { word: 'lip', parts: ['l', 'i', 'p'], hebrew: 'שפה', emoji: '👄' },
+                    { word: 'log', parts: ['l', 'o', 'g'], hebrew: 'בול עץ', emoji: '🪵' },
+                    { word: 'fan', parts: ['f', 'a', 'n'], hebrew: 'מאוורר', emoji: '🪭' },
+                    { word: 'fun', parts: ['f', 'u', 'n'], hebrew: 'כיף', emoji: '🎉' },
+                    { word: 'sun', parts: ['s', 'u', 'n'], hebrew: 'שמש', emoji: '☀️' },
+                    { word: 'cup', parts: ['c', 'u', 'p'], hebrew: 'כוס', emoji: '☕' },
+                    { word: 'bus', parts: ['b', 'u', 's'], hebrew: 'אוטובוס', emoji: '🚌' },
+                    { word: 'bug', parts: ['b', 'u', 'g'], hebrew: 'חיפושית / חרק', emoji: '🐞' },
+                    { word: 'win', parts: ['w', 'i', 'n'], hebrew: 'לנצח', emoji: '🏆' },
+                    { word: 'web', parts: ['w', 'e', 'b'], hebrew: 'קורי עכביש', emoji: '🕸️' },
+                    { word: 'wet', parts: ['w', 'e', 't'], hebrew: 'רטוב', emoji: '💧' },
+                    { word: 'hug', parts: ['h', 'u', 'g'], hebrew: 'חיבוק', emoji: '🤗' },
+                    { word: 'fox', parts: ['f', 'o', 'x'], hebrew: 'שועל', emoji: '🦊' }
+                ]
+            },
+            {
+                id: 5, shortName: 'שלב 5', title: 'כל ה-26 אותיות!',
+                letters: ['j', 'v', 'y', 'z', 'x', 'q'],
+                words: [
+                    { word: 'jam', parts: ['j', 'a', 'm'], hebrew: 'ריבה', emoji: '🍓' },
+                    { word: 'jet', parts: ['j', 'e', 't'], hebrew: 'מטוס סילון', emoji: '✈️' },
+                    { word: 'van', parts: ['v', 'a', 'n'], hebrew: 'ואן', emoji: '🚐' },
+                    { word: 'vet', parts: ['v', 'e', 't'], hebrew: 'וטרינר', emoji: '🩺' },
+                    { word: 'yes', parts: ['y', 'e', 's'], hebrew: 'כן', emoji: '✅' },
+                    { word: 'yak', parts: ['y', 'a', 'k'], hebrew: 'יאק (חיה)', emoji: '🐃' },
+                    { word: 'zip', parts: ['z', 'i', 'p'], hebrew: 'רוכסן', emoji: '🤐' },
+                    { word: 'zoo', parts: ['z', 'oo'], hebrew: 'גן חיות', emoji: '🦁' },
+                    { word: 'box', parts: ['b', 'o', 'x'], hebrew: 'קופסה', emoji: '📦' },
+                    { word: 'six', parts: ['s', 'i', 'x'], hebrew: 'שש', emoji: '6️⃣' },
+                    { word: 'mix', parts: ['m', 'i', 'x'], hebrew: 'לערבב', emoji: '🥣' },
+                    { word: 'quiz', parts: ['q', 'u', 'i', 'z'], hebrew: 'חידון', emoji: '❓' },
+                    { word: 'queen', parts: ['q', 'u', 'ee', 'n'], hebrew: 'מלכה', emoji: '👑' },
+                    { word: 'jug', parts: ['j', 'u', 'g'], hebrew: 'כד', emoji: '🏺' }
+                ]
+            },
+            {
+                id: 6, shortName: 'שלב 6', title: 'צירופי כיתה ד\'!',
+                letters: ['sh', 'ch', 'th', 'ck', 'ee', 'oo'],
+                words: [
+                    { word: 'ship', parts: ['sh', 'i', 'p'], hebrew: 'אונייה', emoji: '🚢' },
+                    { word: 'shop', parts: ['sh', 'o', 'p'], hebrew: 'חנות', emoji: '🏪' },
+                    { word: 'fish', parts: ['f', 'i', 'sh'], hebrew: 'דג', emoji: '🐟' },
+                    { word: 'dish', parts: ['d', 'i', 'sh'], hebrew: 'צלחת', emoji: '🍽️' },
+                    { word: 'chat', parts: ['ch', 'a', 't'], hebrew: 'שיחה', emoji: '💬' },
+                    { word: 'chip', parts: ['ch', 'i', 'p'], hebrew: 'צ\'יפס', emoji: '🍟' },
+                    { word: 'chin', parts: ['ch', 'i', 'n'], hebrew: 'סנטר', emoji: '🙂' },
+                    { word: 'thin', parts: ['th', 'i', 'n'], hebrew: 'דק', emoji: '📏' },
+                    { word: 'this', parts: ['th', 'i', 's'], hebrew: 'זה / זאת', emoji: '👇' },
+                    { word: 'that', parts: ['th', 'a', 't'], hebrew: 'ההוא / ההיא', emoji: '👉' },
+                    { word: 'duck', parts: ['d', 'u', 'ck'], hebrew: 'ברווז', emoji: '🦆' },
+                    { word: 'clock', parts: ['c', 'l', 'o', 'ck'], hebrew: 'שעון', emoji: '⏰' },
+                    { word: 'tree', parts: ['t', 'r', 'ee'], hebrew: 'עץ', emoji: '🌳' },
+                    { word: 'bee', parts: ['b', 'ee'], hebrew: 'דבורה', emoji: '🐝' },
+                    { word: 'book', parts: ['b', 'oo', 'k'], hebrew: 'ספר', emoji: '📖' },
+                    { word: 'moon', parts: ['m', 'oo', 'n'], hebrew: 'ירח', emoji: '🌙' }
+                ]
+            },
+            {
+                id: 7, shortName: 'שלב 7', title: 'קוראים משפטים!',
+                isSentenceLevel: true,
+                letters: [],
+                words: [],
+                sentences: [
+                    { id: 's1', text: 'A big dog sat on a red mat', hebrew: 'כלב גדול ישב על שטיחון אדום', emoji: '🐶🔴' },
+                    { id: 's2', text: 'The fat cat has a hat', hebrew: 'לחתול השמן יש כובע', emoji: '🐱🎩' },
+                    { id: 's3', text: 'A fish is in the dish', hebrew: 'דג נמצא בתוך הצלחת', emoji: '🐟🍽️' },
+                    { id: 's4', text: 'Dad has a red pen', hebrew: 'לאבא יש עט אדום', emoji: '👨🖊️' },
+                    { id: 's5', text: 'The pig can dig in the mud', hebrew: 'החזיר יכול לחפור בבוץ', emoji: '🐷⛏️' },
+                    { id: 's6', text: 'A bug is on the cup', hebrew: 'חיפושית נמצאת על הכוס', emoji: '🐞☕' },
+                    { id: 's7', text: 'This duck can win the fun quiz', hebrew: 'הברווז הזה יכול לנצח בחידון הכיפי', emoji: '🦆🏆' },
+                    { id: 's8', text: 'Look at the moon and the tree', hebrew: 'הביטי בירח ובעץ', emoji: '🌙🌳' },
+                    { id: 's9', text: 'A bee sat on my book', hebrew: 'דבורה ישבה על הספר שלי', emoji: '🐝📖' },
+                    { id: 's10', text: 'The kid has six pens in a box', hebrew: 'לילד יש שש עטים בקופסה', emoji: '🧒📦' },
+                    { id: 's11', text: 'The red bus is fast', hebrew: 'האוטובוס האדום הוא מהיר', emoji: '🚌💨' },
+                    { id: 's12', text: 'The queen has a pet fox', hebrew: 'למלכה יש שועל מחמד', emoji: '👑🦊' }
+                ]
+            }
+        ];
+
+        const ALL_WORDS_MAP = {};
+        LEVELS.forEach(l => (l.words || []).forEach(w => { ALL_WORDS_MAP[w.word] = w; }));
+
+        /* ==========================================================================
+           3. REWARDS SHOP CATALOG
+           ========================================================================== */
+        const SHOP_AVATARS = [
+            { id: 'av_girl', emoji: '👧🏻', name: 'ילדה חכמה', cost: 0 },
+            { id: 'av_astro', emoji: '👩‍🚀', name: 'אסטרונאוטית', cost: 40 },
+            { id: 'av_fairy', emoji: '🧚‍♀️', name: 'פיית מילים', cost: 60 },
+            { id: 'av_hero', emoji: '🦸‍♀️', name: 'גיבורת-על', cost: 90 },
+            { id: 'av_queen', emoji: '👸', name: 'מלכת האנגלית', cost: 120 },
+            { id: 'av_robot', emoji: '🤖', name: 'רובוט גאון', cost: 80 }
+        ];
+
+        const SHOP_PETS = [
+            { id: 'pet_dog', emoji: '🐶', name: 'כלבלב', cost: 0 },
+            { id: 'pet_cat', emoji: '🐱', name: 'חתלתול', cost: 35 },
+            { id: 'pet_uni', emoji: '🦄', name: 'חד-קרן', cost: 75 },
+            { id: 'pet_dragon', emoji: '🐉', name: 'דרקון', cost: 100 },
+            { id: 'pet_panda', emoji: '🐼', name: 'פנדה', cost: 60 },
+            { id: 'pet_owl', emoji: '🦉', name: 'ינשוף חכם', cost: 85 }
+        ];
+
+        const SHOP_THEMES = [
+            { id: 'theme-classic', name: 'קלאסי סגול', icon: '💜', cost: 0, preview: 'from-indigo-500 to-purple-600' },
+            { id: 'theme-unicorn', name: 'חד-קרן ורוד', icon: '🦄', cost: 50, preview: 'from-pink-500 to-purple-500' },
+            { id: 'theme-ocean', name: 'אוקיינוס כחול', icon: '🌊', cost: 50, preview: 'from-sky-500 to-teal-500' },
+            { id: 'theme-space', name: 'חלל וכוכבים', icon: '🌌', cost: 80, preview: 'from-slate-800 to-indigo-800' },
+            { id: 'theme-neon', name: 'ניאון זוהר', icon: '⚡', cost: 100, preview: 'from-fuchsia-600 to-emerald-500' }
+        ];
+
+        const DEFAULT_PARENT_REWARDS = [
+            { id: 'pr_1', title: 'גלידה טעימה 🍦', cost: 100 },
+            { id: 'pr_2', title: 'בחירת סרט משפחתי 🎬', cost: 250 },
+            { id: 'pr_3', title: '20 ₪ אמיתיים לקופה 💵', cost: 500 }
+        ];
+
+        /* ==========================================================================
+           4. TWO PROFILES (AVIGAIL & RANI) + FIREBASE CLOUD PERSISTENCE (STRICT 3 RULES)
+           ========================================================================== */
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        const rawAppId = typeof __app_id !== 'undefined' && __app_id ? String(__app_id) : 'english-phonics-pro';
+        const appId = rawAppId.replace(/\//g, '_');
+        const clientSessionId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        let cloudErrorMsg = '';
+        let pendingSaveBeforeReady = false;
+
+        const PROFILE_META = {
+            avigail: {
+                id: 'avigail',
+                name: 'אביגיל',
+                defaultAvatar: 'av_girl',
+                defaultPet: 'pet_dog',
+                defaultTheme: 'theme-classic',
+                gradient: 'from-indigo-500 to-purple-600',
+                border: 'border-indigo-200 hover:border-indigo-400'
+            },
+            rani: {
+                id: 'rani',
+                name: 'רני',
+                defaultAvatar: 'av_fairy',
+                defaultPet: 'pet_cat',
+                defaultTheme: 'theme-unicorn',
+                gradient: 'from-pink-500 to-purple-500',
+                border: 'border-pink-200 hover:border-pink-400'
+            }
+        };
+
+        function createDefaultProfileData(profileId) {
+            const meta = PROFILE_META[profileId] || PROFILE_META.avigail;
+            return {
+                coins: 0,
+                dailyStreak: 1,
+                lastActiveDate: new Date().toISOString().slice(0, 10),
+                completedLevels: [],
+                learnedLetters: [],
+                readWords: [],
+                readSentences: [],
+                mistakes: [],
+                bdBestScore: 0,
+                slowSpeech: false,
+                sfxMuted: false,
+                preferredVoiceName: '',
+                ownedItems: Array.from(new Set(['av_girl', 'pet_dog', 'theme-classic', meta.defaultAvatar, meta.defaultPet, meta.defaultTheme])),
+                equippedAvatar: meta.defaultAvatar,
+                equippedPet: meta.defaultPet,
+                equippedTheme: meta.defaultTheme,
+                parentRewards: DEFAULT_PARENT_REWARDS.map(r => ({ ...r })),
+                redemptionHistory: []
+            };
+        }
+
+        const profilesCache = {
+            avigail: createDefaultProfileData('avigail'),
+            rani: createDefaultProfileData('rani')
+        };
+
+        let activeProfileId = null; // 'avigail' or 'rani'
+        let state = {
+            ...createDefaultProfileData('avigail'),
+            currentLevelId: 1,
+            currentTab: 'learn',
+            blenderWordIndex: 0,
+            blenderRevealMeaning: false,
+            shopTab: 'app',
+            abcBoardMode: 'name',
+            parentRewardProfileId: 'avigail',
+            pendingResetTarget: null
+        };
+
+        let saveTimeout = null;
+        let cloudReady = false;
+        let lastLocalWriteId = 0;
+        const profileUnsubscribers = [];
+
+        function getLocalBackupKey(profileId) {
+            return `english_phonics_pro_${appId}_${profileId}`;
+        }
+
+        function saveLocalBackup(profileId, data) {
+            try {
+                localStorage.setItem(getLocalBackupKey(profileId), JSON.stringify(data));
+            } catch (err) {
+                // Ignore storage quota or iframe restrictions
+            }
+        }
+
+        function loadLocalBackups() {
+            ['avigail', 'rani'].forEach((pid) => {
+                try {
+                    const raw = localStorage.getItem(getLocalBackupKey(pid));
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        profilesCache[pid] = sanitizeLoadedProfile(pid, parsed);
+                    }
+                } catch (err) {
+                    // Ignore malformed or blocked localStorage
+                }
+            });
+        }
+
+        function renderProfileCards() {
+            const grid = document.getElementById('profile-cards-grid');
+            if (!grid) return;
+
+            grid.innerHTML = ['avigail', 'rani'].map((pid) => {
+                const meta = PROFILE_META[pid];
+                const data = profilesCache[pid] || createDefaultProfileData(pid);
+                const av = SHOP_AVATARS.find(a => a.id === data.equippedAvatar) || SHOP_AVATARS[0];
+                const pet = SHOP_PETS.find(p => p.id === data.equippedPet) || SHOP_PETS[0];
+                const singleLetters = (data.learnedLetters || []).filter(l => l.length === 1).length;
+
+                return `
+                    <button onclick="selectProfile('${pid}')" class="group bg-white/95 hover:bg-white border-2 ${meta.border} rounded-3xl p-6 text-right shadow-md hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1 active:scale-98 cursor-pointer flex flex-col justify-between">
+                        <div class="flex items-center gap-4 mb-5">
+                            <div class="relative w-20 h-20 rounded-3xl bg-gradient-to-br ${meta.gradient} text-white flex items-center justify-center text-4xl shadow-md group-hover:scale-105 transition shrink-0">
+                                <span>${av.emoji}</span>
+                                <span class="absolute -bottom-1.5 -left-1.5 bg-white rounded-full w-8 h-8 flex items-center justify-center text-lg shadow border border-slate-200">${pet.emoji}</span>
+                            </div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-black text-slate-800">${meta.name}</div>
+                                <div class="inline-flex items-center gap-1.5 mt-1 bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1 rounded-full text-xs sm:text-sm font-black">
+                                    <span>🪙</span>
+                                    <span>${data.coins || 0} מטבעות</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 text-center bg-slate-50 rounded-2xl p-3 border border-slate-100 mb-4">
+                            <div>
+                                <div class="text-xs text-slate-500 font-bold">שלבים</div>
+                                <div class="text-sm sm:text-base font-black text-indigo-700">${(data.completedLevels || []).length} / 7</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-slate-500 font-bold">אותיות</div>
+                                <div class="text-sm sm:text-base font-black text-emerald-700">${singleLetters} / 26</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-slate-500 font-bold">רצף</div>
+                                <div class="text-sm sm:text-base font-black text-orange-600">🔥 ${data.dailyStreak || 1}</div>
+                            </div>
+                        </div>
+
+                        <div class="w-full py-3 rounded-2xl bg-gradient-to-l ${meta.gradient} text-white font-extrabold text-center text-sm sm:text-base shadow-sm">
+                            בואי נתחיל ללמוד! 🚀
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function applyProfileToActiveState(profileId) {
+            const data = sanitizeLoadedProfile(profileId, profilesCache[profileId]);
+            const today = new Date().toISOString().slice(0, 10);
+
+            if (data.lastActiveDate && data.lastActiveDate !== today) {
+                const prev = new Date(data.lastActiveDate + 'T00:00:00');
+                const curr = new Date(today + 'T00:00:00');
+                const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) {
+                    data.dailyStreak = (data.dailyStreak || 1) + 1;
+                } else if (diffDays > 1) {
+                    data.dailyStreak = 1;
+                }
+                data.lastActiveDate = today;
+                profilesCache[profileId] = data;
+            }
+
+            Object.assign(state, {
+                ...data,
+                completedLevels: [...data.completedLevels],
+                learnedLetters: [...data.learnedLetters],
+                readWords: [...data.readWords],
+                readSentences: [...data.readSentences],
+                mistakes: [...data.mistakes],
+                ownedItems: [...data.ownedItems],
+                parentRewards: data.parentRewards.map(r => ({ ...r })),
+                redemptionHistory: data.redemptionHistory.map(h => ({ ...h }))
+            });
+
+            initVoices();
+            applyTheme();
+            updateHeaderUI();
+            renderLevelSelector();
+            renderLevelHeader();
+            renderCurrentView();
+        }
+
+        window.selectProfile = function(profileId) {
+            if (!PROFILE_META[profileId]) return;
+            activeProfileId = profileId;
+            document.getElementById('profile-screen').classList.add('hidden');
+            document.getElementById('app-wrapper').classList.remove('hidden');
+            applyProfileToActiveState(profileId);
+            selectLevel(state.currentLevelId || 1);
+            playSfx('pop');
+            showToast(`ברוכה הבאה, ${PROFILE_META[profileId].name}! 🌟`, '👋');
+        };
+
+        window.openProfileScreen = function() {
+            if (activeProfileId) {
+                persistToCloudNow(activeProfileId);
+            }
+            document.getElementById('app-wrapper').classList.add('hidden');
+            document.getElementById('profile-screen').classList.remove('hidden');
+            renderProfileCards();
+        };
+
+        function getProfileDocRef(profileId) {
+            // RULE 1: Shared public path so Avigail & Rani sync across refreshes and all devices
+            return doc(db, 'artifacts', appId, 'public', 'data', 'phonicsProfiles', profileId);
+        }
+
+        function extractPersistableState() {
+            lastLocalWriteId = Date.now();
+            return {
+                coins: Number(state.coins) || 0,
+                dailyStreak: Number(state.dailyStreak) || 1,
+                lastActiveDate: state.lastActiveDate || new Date().toISOString().slice(0, 10),
+                completedLevels: Array.isArray(state.completedLevels) ? [...state.completedLevels] : [],
+                learnedLetters: Array.isArray(state.learnedLetters) ? [...state.learnedLetters] : [],
+                readWords: Array.isArray(state.readWords) ? [...state.readWords] : [],
+                readSentences: Array.isArray(state.readSentences) ? [...state.readSentences] : [],
+                mistakes: Array.isArray(state.mistakes) ? [...state.mistakes] : [],
+                bdBestScore: Number(state.bdBestScore) || 0,
+                slowSpeech: Boolean(state.slowSpeech),
+                sfxMuted: Boolean(state.sfxMuted),
+                preferredVoiceName: state.preferredVoiceName || '',
+                ownedItems: Array.isArray(state.ownedItems) ? [...state.ownedItems] : ['av_girl', 'pet_dog', 'theme-classic'],
+                equippedAvatar: state.equippedAvatar || 'av_girl',
+                equippedPet: state.equippedPet || 'pet_dog',
+                equippedTheme: state.equippedTheme || 'theme-classic',
+                parentRewards: (state.parentRewards || []).map(r => ({
+                    id: String(r.id || 'pr_' + Date.now()),
+                    title: String(r.title || ''),
+                    cost: Number(r.cost) || 10
+                })),
+                redemptionHistory: (state.redemptionHistory || []).map(h => ({
+                    title: String(h.title || ''),
+                    cost: Number(h.cost) || 0,
+                    date: String(h.date || '')
+                })),
+                updatedAt: new Date().toISOString(),
+                writeId: lastLocalWriteId,
+                editorId: clientSessionId
+            };
+        }
+
+        function sanitizeLoadedProfile(profileId, data) {
+            const base = createDefaultProfileData(profileId);
+            if (!data) return base;
+            return {
+                ...base,
+                coins: typeof data.coins === 'number' ? data.coins : base.coins,
+                dailyStreak: typeof data.dailyStreak === 'number' ? data.dailyStreak : base.dailyStreak,
+                lastActiveDate: data.lastActiveDate || base.lastActiveDate,
+                completedLevels: Array.isArray(data.completedLevels) ? data.completedLevels : [],
+                learnedLetters: Array.isArray(data.learnedLetters) ? data.learnedLetters : [],
+                readWords: Array.isArray(data.readWords) ? data.readWords : [],
+                readSentences: Array.isArray(data.readSentences) ? data.readSentences : [],
+                mistakes: Array.isArray(data.mistakes) ? data.mistakes : [],
+                bdBestScore: data.bdBestScore || 0,
+                slowSpeech: !!data.slowSpeech,
+                sfxMuted: !!data.sfxMuted,
+                preferredVoiceName: data.preferredVoiceName || '',
+                ownedItems: Array.isArray(data.ownedItems) && data.ownedItems.length ? data.ownedItems : base.ownedItems,
+                equippedAvatar: data.equippedAvatar || base.equippedAvatar,
+                equippedPet: data.equippedPet || base.equippedPet,
+                equippedTheme: data.equippedTheme || base.equippedTheme,
+                parentRewards: Array.isArray(data.parentRewards) ? data.parentRewards : base.parentRewards,
+                redemptionHistory: Array.isArray(data.redemptionHistory) ? data.redemptionHistory : [],
+                writeId: data.writeId || 0
+            };
+        }
+
+        function mergeRemoteProfileIntoActiveState(profileId, remoteData) {
+            if (activeProfileId !== profileId) return;
+            // Skip echo of our own just-written update from this tab
+            if (remoteData.editorId === clientSessionId && remoteData.writeId && remoteData.writeId === lastLocalWriteId) return;
+
+            Object.assign(state, {
+                ...remoteData,
+                completedLevels: [...remoteData.completedLevels],
+                learnedLetters: [...remoteData.learnedLetters],
+                readWords: [...remoteData.readWords],
+                readSentences: [...remoteData.readSentences],
+                mistakes: [...remoteData.mistakes],
+                ownedItems: [...remoteData.ownedItems],
+                parentRewards: remoteData.parentRewards.map(r => ({ ...r })),
+                redemptionHistory: remoteData.redemptionHistory.map(h => ({ ...h }))
+            });
+            applyTheme();
+            updateHeaderUI();
+            renderLevelSelector();
+            renderLevelHeader();
+        }
+
+        async function ensureAuthenticated() {
+            if (!auth) return null;
+            if (auth.currentUser) {
+                currentUser = auth.currentUser;
+                return currentUser;
+            }
+            let cred = null;
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try {
+                    cred = await signInWithCustomToken(auth, __initial_auth_token);
+                } catch (tokenErr) {
+                    console.warn('Custom token auth failed, falling back to anonymous:', tokenErr);
+                    cred = await signInAnonymously(auth);
+                }
+            } else {
+                cred = await signInAnonymously(auth);
+            }
+            currentUser = cred?.user || auth.currentUser;
+            return currentUser;
+        }
+
+        async function initCloudStorage() {
+            const statusEl = document.getElementById('profile-cloud-status');
+            if (statusEl) statusEl.textContent = '• טוען נתונים מהענן...';
+            try {
+                if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+                    cloudReady = true;
+                    cloudErrorMsg = 'הגדרות ענן לא נמצאו בסביבה זו';
+                    if (statusEl) statusEl.textContent = '• מצב זמני (ללא ענן)';
+                    renderProfileCards();
+                    return;
+                }
+                const firebaseConfig = typeof __firebase_config === 'string'
+                    ? JSON.parse(__firebase_config)
+                    : __firebase_config;
+
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // RULE 3: Authenticate FIRST before any Firestore operation
+                const user = await ensureAuthenticated();
+                if (!user) {
+                    throw new Error('התחברות אנונימית לענן נכשלה');
+                }
+
+                // Load both profiles in parallel + attach live sync listeners
+                await Promise.all(['avigail', 'rani'].map(async (pid) => {
+                    const pRef = getProfileDocRef(pid);
+                    const snap = await getDoc(pRef);
+                    if (snap.exists()) {
+                        const sanitized = sanitizeLoadedProfile(pid, snap.data());
+                        // If user didn't already make local changes before load finished, apply cloud data
+                        if (!(activeProfileId === pid && pendingSaveBeforeReady)) {
+                            profilesCache[pid] = sanitized;
+                        }
+                    } else {
+                        const initialData = {
+                            ...profilesCache[pid],
+                            updatedAt: new Date().toISOString(),
+                            writeId: Date.now(),
+                            editorId: clientSessionId
+                        };
+                        await setDoc(pRef, initialData);
+                    }
+
+                    // Live sync listener with required error callback
+                    const unsub = onSnapshot(
+                        pRef,
+                        (liveSnap) => {
+                            if (!liveSnap.exists() || liveSnap.metadata.hasPendingWrites) return;
+                            const sanitized = sanitizeLoadedProfile(pid, liveSnap.data());
+                            profilesCache[pid] = sanitized;
+                            renderProfileCards();
+                            mergeRemoteProfileIntoActiveState(pid, sanitized);
+                        },
+                        (err) => {
+                            console.warn('Live sync error for profile', pid, err);
+                            cloudErrorMsg = err?.message || 'שגיאת סנכרון חי';
+                        }
+                    );
+                    profileUnsubscribers.push(unsub);
+                }));
+
+                cloudReady = true;
+                cloudErrorMsg = '';
+                if (statusEl) statusEl.textContent = '• מסונכרן בענן לכל המכשירים ☁️✓';
+                renderProfileCards();
+
+                if (activeProfileId) {
+                    if (pendingSaveBeforeReady) {
+                        pendingSaveBeforeReady = false;
+                        await persistToCloudNow(activeProfileId);
+                    } else {
+                        applyProfileToActiveState(activeProfileId);
+                    }
+                }
+            } catch (err) {
+                console.warn('Cloud storage initialization failed:', err);
+                cloudReady = true;
+                cloudErrorMsg = err?.message || 'שגיאת חיבור לענן';
+                if (statusEl) statusEl.textContent = '• שגיאת חיבור לענן ⚠️';
+                renderProfileCards();
+                const badge = document.getElementById('save-status-badge');
+                if (badge) {
+                    badge.textContent = 'לא מחובר לענן ⚠️';
+                    badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200';
+                }
+            }
+        }
+
+        /* ==========================================================================
+           5. CRYSTAL-CLEAR ENGLISH SPEECH ENGINE (VOICES, WORDS, ABC NAMES & PHONICS)
+           ========================================================================== */
+        let availableEnglishVoices = [];
+        let selectedVoice = null;
+
+        function initVoices() {
+            if (!('speechSynthesis' in window)) return;
+            try {
+                const allVoices = window.speechSynthesis.getVoices() || [];
+                // Prioritize clear US/GB English voices
+                const enVoices = allVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+                enVoices.sort((a, b) => {
+                    const score = (v) => {
+                        const n = (v.name || '').toLowerCase();
+                        let s = 0;
+                        if (v.lang === 'en-US') s += 4;
+                        else if (v.lang === 'en-GB') s += 3;
+                        if (n.includes('google') || n.includes('samantha') || n.includes('aria') || n.includes('natural') || n.includes('jenny')) s += 5;
+                        if (v.localService) s += 1;
+                        return s;
+                    };
+                    return score(b) - score(a);
+                });
+
+                availableEnglishVoices = enVoices;
+
+                if (state.preferredVoiceName) {
+                    const savedMatch = availableEnglishVoices.find(v => v.name === state.preferredVoiceName);
+                    if (savedMatch) {
+                        selectedVoice = savedMatch;
+                        return;
+                    }
+                }
+                if (availableEnglishVoices.length > 0) {
+                    selectedVoice = availableEnglishVoices[0];
+                }
+            } catch (err) {
+                console.warn('Voice initialization warning:', err);
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                initVoices();
+            };
+        }
+
+        function createEnglishUtterance(text, rateMultiplier = 1) {
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = selectedVoice ? selectedVoice.lang : 'en-US';
+            if (selectedVoice) utter.voice = selectedVoice;
+            const baseRate = state.slowSpeech ? 0.68 : 0.92;
+            utter.rate = Math.max(0.5, Math.min(1.2, baseRate * rateMultiplier));
+            utter.pitch = 1.04;
+            utter.volume = 1;
+            return utter;
+        }
+
+        function speakWord(text) {
+            if (!text || !('speechSynthesis' in window)) return;
+            try {
+                if (!selectedVoice) initVoices();
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.resume();
+                const utter = createEnglishUtterance(String(text), 1);
+                window.speechSynthesis.speak(utter);
+            } catch (err) {
+                console.warn('Speech synthesis error:', err);
+            }
+        }
+
+        function speakLetterName(key) {
+            if (!key || !('speechSynthesis' in window)) return;
+            const info = LETTER_BANK[String(key).toLowerCase()];
+            const spoken = info ? info.ttsLetterName : String(key).toUpperCase();
+            try {
+                if (!selectedVoice) initVoices();
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.resume();
+                const utter = createEnglishUtterance(spoken, 0.92);
+                window.speechSynthesis.speak(utter);
+            } catch (err) {
+                console.warn('Letter name speech error:', err);
+            }
+        }
+
+        function speakPhonics(key, withExample = false) {
+            if (!key || !('speechSynthesis' in window)) return;
+            const info = LETTER_BANK[String(key).toLowerCase()];
+            const phonemeText = info ? info.phoneme : String(key);
+            try {
+                if (!selectedVoice) initVoices();
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.resume();
+
+                const uPhoneme = createEnglishUtterance(phonemeText, 0.85);
+                window.speechSynthesis.speak(uPhoneme);
+
+                if (withExample && info && info.exampleWord) {
+                    const uExample = createEnglishUtterance(info.exampleWord, 0.95);
+                    window.speechSynthesis.speak(uExample);
+                }
+            } catch (err) {
+                console.warn('Phonics speech error:', err);
+            }
+        }
+
+        // Expose speech helpers globally for inline HTML onclick handlers
+        window.speakWord = speakWord;
+        window.speakLetterName = speakLetterName;
+        window.speakPhonics = speakPhonics;
+
+        /* ==========================================================================
+           6. WEB AUDIO SFX ENGINE + COINS, WORD MASTERY & MISTAKE BANK HELPERS
+           ========================================================================== */
+        let audioCtx = null;
+
+        function getAudioContext() {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return null;
+            if (!audioCtx) audioCtx = new Ctx();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
+            return audioCtx;
+        }
+
+        function playSfx(type = 'pop') {
+            if (state.sfxMuted) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+
+                if (type === 'pop') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.exponentialRampToValueAtTime(780, now + 0.08);
+                    gain.gain.setValueAtTime(0.14, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.11);
+                } else if (type === 'coin') {
+                    // Bright two-tone ka-ching chime
+                    [987.77, 1318.51].forEach((freq, i) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        const start = now + i * 0.075;
+                        osc.frequency.setValueAtTime(freq, start);
+                        gain.gain.setValueAtTime(0.18, start);
+                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.24);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(start);
+                        osc.stop(start + 0.25);
+                    });
+                } else if (type === 'wrong') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(160, now + 0.2);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.23);
+                } else if (type === 'fanfare') {
+                    // Victory arpeggio
+                    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        const start = now + i * 0.09;
+                        osc.frequency.setValueAtTime(freq, start);
+                        gain.gain.setValueAtTime(0.16, start);
+                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(start);
+                        osc.stop(start + 0.32);
+                    });
+                }
+            } catch (err) {
+                // Ignore Web Audio autoplay restrictions
+            }
+        }
+
+        function spawnFloatingCoin(amount) {
+            const wallet = document.getElementById('wallet-pill');
+            const popup = document.createElement('div');
+            popup.className = 'floating-coin';
+            popup.textContent = `+${amount} 🪙`;
+
+            if (wallet) {
+                const rect = wallet.getBoundingClientRect();
+                popup.style.left = `${Math.max(16, rect.left + rect.width / 2 - 42)}px`;
+                popup.style.top = `${Math.max(16, rect.top)}px`;
+            } else {
+                popup.style.left = '50%';
+                popup.style.top = '80px';
+            }
+
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 1200);
+        }
+
+        function awardCoins(amount, toastMessage = '') {
+            if (!amount || amount <= 0) return;
+            state.coins = (Number(state.coins) || 0) + amount;
+            playSfx('coin');
+            spawnFloatingCoin(amount);
+            updateHeaderUI();
+            scheduleSave();
+            if (toastMessage) {
+                showToast(`${toastMessage} (+${amount} 🪙)`, '🪙');
+            }
+        }
+
+        function markWordAsRead(word, withCoinReward = false) {
+            if (!word) return;
+            const normalized = String(word).toLowerCase();
+            if (!state.readWords.includes(normalized)) {
+                state.readWords.push(normalized);
+                if (withCoinReward) {
+                    awardCoins(3, `קראת מילה חדשה: ${normalized}!`);
+                } else {
+                    updateHeaderUI();
+                    scheduleSave();
+                }
+            }
+        }
+
+        function scheduleSave() {
+            if (!activeProfileId) return;
+            const snapshot = extractPersistableState();
+            profilesCache[activeProfileId] = snapshot;
+            saveLocalBackup(activeProfileId, snapshot);
+
+            if (!cloudReady) {
+                pendingSaveBeforeReady = true;
+                return;
+            }
+
+            const badge = document.getElementById('save-status-badge');
+            if (badge) {
+                badge.textContent = 'שומר לענן...';
+                badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200';
+            }
+            clearTimeout(saveTimeout);
+            // Save immediately so an instant refresh never loses progress
+            persistToCloudNow(activeProfileId);
+        }
+
+        async function persistToCloudNow(profileId = activeProfileId) {
+            const badge = document.getElementById('save-status-badge');
+            if (!profileId) return;
+            const dataToSave = profileId === activeProfileId
+                ? extractPersistableState()
+                : { ...profilesCache[profileId], updatedAt: new Date().toISOString(), writeId: Date.now(), editorId: clientSessionId };
+            profilesCache[profileId] = dataToSave;
+            saveLocalBackup(profileId, dataToSave);
+
+            if (!db) {
+                if (badge) {
+                    badge.textContent = 'נשמר מקומית ✓';
+                    badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200';
+                }
+                return;
+            }
+
+            try {
+                const user = currentUser || await ensureAuthenticated();
+                if (!user) throw new Error('אין משתמש מחובר לשמירה');
+
+                // RULE 1: Strict shared public path so progress persists on refresh & across devices
+                const profileRef = getProfileDocRef(profileId);
+                await setDoc(profileRef, dataToSave);
+                cloudErrorMsg = '';
+                if (badge) {
+                    badge.textContent = 'נשמר בענן ☁️✓';
+                    badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200';
+                }
+            } catch (err) {
+                console.warn('Error saving progress:', err);
+                cloudErrorMsg = err?.message || 'שגיאת שמירה בענן';
+                if (badge) {
+                    badge.textContent = 'שגיאת שמירה ⚠️';
+                    badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200';
+                }
+            }
+        }
+
+        function recordMistake(word) {
+            if (!word) return;
+            const normalized = String(word).toLowerCase();
+            if (ALL_WORDS_MAP[normalized] && !state.mistakes.includes(normalized)) {
+                state.mistakes.push(normalized);
+                updateHeaderUI();
+                scheduleSave();
+            }
+        }
+
+        let confettiParticles = [];
+        let confettiAnimating = false;
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const colors = ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#a855f7', '#22c55e'];
+            for (let i = 0; i < 90; i++) {
+                confettiParticles.push({
+                    x: Math.random() * canvas.width,
+                    y: -20 - Math.random() * 140,
+                    w: 7 + Math.random() * 6,
+                    h: 5 + Math.random() * 8,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: 3 + Math.random() * 5,
+                    rot: Math.random() * 360,
+                    vRot: (Math.random() - 0.5) * 12,
+                    alpha: 1
+                });
+            }
+            if (!confettiAnimating) {
+                confettiAnimating = true;
+                requestAnimationFrame(() => animateConfetti(canvas, ctx));
+            }
+        }
+
+        function animateConfetti(canvas, ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            confettiParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.08;
+                p.rot += p.vRot;
+                if (p.y > canvas.height * 0.78) p.alpha -= 0.025;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rot * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+            confettiParticles = confettiParticles.filter(p => p.alpha > 0 && p.y < canvas.height + 40);
+            if (confettiParticles.length > 0) requestAnimationFrame(() => animateConfetti(canvas, ctx));
+            else {
+                confettiAnimating = false;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        let toastTimer = null;
+        function showToast(text, icon = '✨') {
+            const container = document.getElementById('toast-container');
+            document.getElementById('toast-text').textContent = text;
+            document.getElementById('toast-icon').textContent = icon;
+            container.classList.remove('opacity-0', 'translate-y-4');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => container.classList.add('opacity-0', 'translate-y-4'), 2400);
+        }
+
+        /* ==========================================================================
+           7. HEADER, THEME & LEVEL NAVIGATION
+           ========================================================================== */
+        function applyTheme() {
+            document.body.classList.remove('theme-classic', 'theme-unicorn', 'theme-ocean', 'theme-space', 'theme-neon');
+            document.body.classList.add(state.equippedTheme || 'theme-classic');
+        }
+
+        function updateHeaderUI() {
+            const nameEl = document.getElementById('header-profile-name');
+            if (nameEl && activeProfileId && PROFILE_META[activeProfileId]) {
+                nameEl.textContent = PROFILE_META[activeProfileId].name;
+            }
+
+            document.getElementById('stat-coins').textContent = state.coins;
+            document.getElementById('stat-streak').textContent = state.dailyStreak;
+
+            const av = SHOP_AVATARS.find(a => a.id === state.equippedAvatar) || SHOP_AVATARS[0];
+            const pet = SHOP_PETS.find(p => p.id === state.equippedPet) || SHOP_PETS[0];
+            document.getElementById('header-avatar').textContent = av.emoji;
+            document.getElementById('header-pet').textContent = pet.emoji;
+
+            document.getElementById('speed-icon').textContent = state.slowSpeech ? '🐢' : '🐇';
+            document.getElementById('speed-label').textContent = state.slowSpeech ? 'קצב איטי' : 'קצב רגיל';
+            document.getElementById('sfx-icon').textContent = state.sfxMuted ? '🔇' : '🔊';
+
+            // Letters mastered out of 26 base letters
+            const singleLettersMastered = state.learnedLetters.filter(l => l.length === 1).length;
+            document.getElementById('stat-letters-text').textContent = `${singleLettersMastered} / 26`;
+            document.getElementById('bar-letters').style.width = `${Math.min(100, Math.round((singleLettersMastered / 26) * 100))}%`;
+
+            // Words read
+            const totalWordsCount = Object.keys(ALL_WORDS_MAP).length;
+            document.getElementById('stat-words-text').textContent = `${state.readWords.length} / ${totalWordsCount}`;
+            document.getElementById('bar-words').style.width = `${Math.min(100, Math.round((state.readWords.length / totalWordsCount) * 100))}%`;
+
+            // Levels completed
+            document.getElementById('stat-levels-text').textContent = `${state.completedLevels.length} / 7`;
+            document.getElementById('bar-levels').style.width = `${Math.round((state.completedLevels.length / 7) * 100)}%`;
+
+            // Mistake bank badge
+            const mBadge = document.getElementById('mistake-badge-top');
+            if (state.mistakes.length > 0) {
+                mBadge.classList.remove('hidden');
+                document.getElementById('mistake-count-top').textContent = state.mistakes.length;
+            } else {
+                mBadge.classList.add('hidden');
+            }
+        }
+
+        function getCurrentLevel() {
+            return LEVELS.find(l => l.id === state.currentLevelId) || LEVELS[0];
+        }
+
+        function renderLevelSelector() {
+            const container = document.getElementById('level-selector');
+            container.innerHTML = '';
+
+            LEVELS.forEach(lvl => {
+                const isSelected = state.currentLevelId === lvl.id;
+                const isDone = state.completedLevels.includes(lvl.id);
+
+                const btn = document.createElement('button');
+                btn.onclick = () => selectLevel(lvl.id);
+                btn.className = `relative text-right p-3 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between min-h-[76px] ${
+                    isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md -translate-y-0.5'
+                        : isDone
+                            ? 'bg-emerald-50/90 hover:bg-emerald-100 text-slate-800 border-emerald-300'
+                            : 'bg-white/95 hover:bg-indigo-50 text-slate-800 border-slate-200'
+                }`;
+
+                const previewText = lvl.isSentenceLevel
+                    ? '📖 12 משפטים'
+                    : lvl.letters.map(l => l.toUpperCase()).join(' ');
+
+                btn.innerHTML = `
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-xs font-extrabold ${isSelected ? 'text-indigo-100' : 'text-indigo-600'}">${lvl.shortName}</span>
+                        ${isDone ? `<span class="text-[11px] font-black px-1.5 py-0.5 rounded-full ${isSelected ? 'bg-white/25 text-white' : 'bg-emerald-500 text-white'}">✓</span>` : ''}
+                    </div>
+                    <div class="${lvl.isSentenceLevel ? '' : 'en-text'} text-xs font-extrabold mt-1 truncate w-full ${isSelected ? 'text-white' : 'text-slate-700'}">${previewText}</div>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        window.selectLevel = function(levelId) {
+            state.currentLevelId = levelId;
+            state.blenderWordIndex = 0;
+            state.blenderRevealMeaning = false;
+            renderLevelSelector();
+            renderLevelHeader();
+
+            const lvl = getCurrentLevel();
+            if (lvl.isSentenceLevel) {
+                document.getElementById('main-tabs-bar').classList.add('hidden');
+                hideAllTabPanels();
+                document.getElementById('tab-sentences').classList.remove('hidden');
+                renderSentencesLevel();
+            } else {
+                document.getElementById('main-tabs-bar').classList.remove('hidden');
+                document.getElementById('tab-sentences').classList.add('hidden');
+                switchTab('learn');
+            }
+        };
+
+        function renderLevelHeader() {
+            const lvl = getCurrentLevel();
+            document.getElementById('current-level-badge').textContent = lvl.shortName;
+            document.getElementById('current-level-title').textContent = lvl.title;
+            document.getElementById('current-level-subtitle').textContent = lvl.isSentenceLevel
+                ? 'לחצי על כל מילה לשמוע אותה, או קראי את כל המשפט!'
+                : lvl.letters.map(l => l.toUpperCase()).join(' • ');
+
+            const doneBadge = document.getElementById('current-level-done-badge');
+            doneBadge.classList.toggle('hidden', !state.completedLevels.includes(lvl.id));
+        }
+
+        function hideAllTabPanels() {
+            ['learn', 'blend', 'spell', 'quiz', 'challenges', 'sentences'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+            });
+        }
+
+        window.switchTab = function(tabName) {
+            const lvl = getCurrentLevel();
+            if (lvl.isSentenceLevel && tabName !== 'challenges') {
+                // Allow jumping to challenges even from level 7
+                state.currentLevelId = 1;
+                renderLevelSelector();
+                renderLevelHeader();
+                document.getElementById('main-tabs-bar').classList.remove('hidden');
+            }
+
+            state.currentTab = tabName;
+            hideAllTabPanels();
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            ['learn', 'blend', 'spell', 'quiz', 'challenges'].forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabName) {
+                    btn.className = 'flex-1 sm:flex-none px-3 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-white text-indigo-700 shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap';
+                } else {
+                    btn.className = 'flex-1 sm:flex-none px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white/90 hover:bg-white/15 transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap';
+                }
+            });
+
+            renderCurrentView();
+        };
+
+        function renderCurrentView() {
+            const lvl = getCurrentLevel();
+            if (lvl.isSentenceLevel && state.currentTab !== 'challenges') {
+                renderSentencesLevel();
+                return;
+            }
+            if (state.currentTab === 'learn') renderLearnTab();
+            else if (state.currentTab === 'blend') renderBlenderTab();
+            else if (state.currentTab === 'spell') startSpellingBuilder();
+            else if (state.currentTab === 'quiz') startQuiz(false);
+            else if (state.currentTab === 'challenges') renderChallengesTab();
+        }
+
+        window.toggleSpeechSpeed = function() {
+            state.slowSpeech = !state.slowSpeech;
+            updateHeaderUI();
+            scheduleSave();
+            showToast(state.slowSpeech ? 'מצב הקראה איטית וברורה 🐢' : 'מצב הקראה בקצב רגיל 🐇', state.slowSpeech ? '🐢' : '🐇');
+        };
+
+        window.toggleSfxMute = function() {
+            state.sfxMuted = !state.sfxMuted;
+            updateHeaderUI();
+            scheduleSave();
+            if (!state.sfxMuted) playSfx('pop');
+        };
+
+        /* ==========================================================================
+           8. TAB 1: LEARN LETTERS (DUAL ABC NAME + PHONICS SOUND + GENIUS BONUS)
+           ========================================================================== */
+        function renderLearnTab() {
+            const lvl = getCurrentLevel();
+            const grid = document.getElementById('letters-grid');
+            grid.innerHTML = '';
+
+            lvl.letters.forEach(key => {
+                const info = LETTER_BANK[key];
+                const isLearned = state.learnedLetters.includes(key);
+                const card = document.createElement('div');
+                card.className = `rounded-3xl p-5 border-2 transition-all flex flex-col justify-between ${
+                    isLearned
+                        ? 'bg-emerald-50/40 border-emerald-200 shadow-xs'
+                        : 'bg-slate-50/80 hover:bg-white border-indigo-100 hover:border-indigo-300 shadow-xs hover:shadow-md'
+                }`;
+
+                const bonusHtml = info.bonus ? `
+                    <div class="mt-3">
+                        <button onclick="toggleGeniusBonus('${key}')" class="w-full flex items-center justify-between bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-extrabold px-3 py-2 rounded-xl transition cursor-pointer">
+                            <span>💡 בונוס לגאונים: צליל נוסף</span>
+                            <span id="bonus-arrow-${key}">▼</span>
+                        </button>
+                        <div id="bonus-box-${key}" class="hidden mt-2 bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-xs text-amber-950 space-y-2 animate-pop">
+                            <div class="font-extrabold text-amber-800">${info.bonus.title}</div>
+                            <p class="leading-relaxed">${info.bonus.desc}</p>
+                            <button onclick="speakWord('${info.bonus.word}')" class="inline-flex items-center gap-1.5 bg-white border border-amber-300 hover:bg-amber-100 px-3 py-1.5 rounded-lg font-bold text-amber-900 cursor-pointer">
+                                <span>${info.bonus.emoji}</span>
+                                <span class="en-text font-black text-sm">${info.bonus.word}</span>
+                                <span>(${info.bonus.hebrew}) 🔊</span>
+                            </button>
+                        </div>
+                    </div>
+                ` : '';
+
+                card.innerHTML = `
+                    <div>
+                        <!-- Letter Display -->
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <div onclick="speakLetterName('${key}')" class="cursor-pointer select-none flex items-baseline gap-2 bg-white border border-indigo-100 px-4 py-2 rounded-2xl shadow-2xs hover:scale-105 transition" title="לחצי לשמוע את שם האות ב-ABC">
+                                <span class="en-text text-4xl font-extrabold text-slate-400">${info.upper}</span>
+                                <span class="en-text text-5xl font-black text-indigo-600">${info.lower}</span>
+                            </div>
+
+                            <!-- Dual Badges: ABC Name vs Phonics Sound -->
+                            <div class="flex flex-col gap-1.5 flex-1">
+                                <div class="bg-indigo-100/90 border border-indigo-200 text-indigo-950 px-2.5 py-1 rounded-xl text-xs font-bold flex items-center justify-between gap-1">
+                                    <span class="text-indigo-700">שם ב-ABC:</span>
+                                    <span class="font-black text-sm">${info.hebrewName}</span>
+                                </div>
+                                <div class="bg-emerald-100/90 border border-emerald-200 text-emerald-950 px-2.5 py-1 rounded-xl text-xs font-bold flex items-center justify-between gap-1">
+                                    <span class="text-emerald-700">צליל קריאה:</span>
+                                    <span class="font-black text-sm">${info.hebrewSound.split(' ')[0]}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dual Pronunciation Buttons -->
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <button onclick="speakLetterName('${key}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-2.5 px-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 shadow-xs cursor-pointer">
+                                <span>🔊</span><span>שם האות</span>
+                            </button>
+                            <button onclick="speakPhonics('${key}', true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2.5 px-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 shadow-xs cursor-pointer">
+                                <span>🗣️</span><span>צליל האות</span>
+                            </button>
+                        </div>
+
+                        <!-- Full Reading Sound & Memory Trick -->
+                        <div class="bg-white/90 border border-indigo-100/80 rounded-2xl p-3 mb-3 text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                            <div class="text-xs font-extrabold text-emerald-700 mb-1">🗣️ הצליל במילה: ${info.hebrewSound}</div>
+                            <span class="font-extrabold text-indigo-600">💡 טריק: </span>${info.trick}
+                        </div>
+
+                        <!-- Example Word Strip -->
+                        <div class="flex items-center justify-between bg-white border border-slate-200/80 rounded-2xl p-2.5">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">${info.exampleEmoji}</span>
+                                <div>
+                                    <div class="en-text font-black text-lg text-slate-800 leading-none">${info.exampleWord}</div>
+                                    <div class="text-xs text-slate-500 font-medium">${info.exampleHebrew}</div>
+                                </div>
+                            </div>
+                            <button onclick="speakWord('${info.exampleWord}')" class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-xs px-3 py-2 rounded-xl transition active:scale-95 cursor-pointer">
+                                🔊 שמע מילה
+                            </button>
+                        </div>
+
+                        ${bonusHtml}
+                    </div>
+
+                    <!-- Mastered Toggle -->
+                    <div class="mt-4 pt-3 border-t border-slate-200/70">
+                        <button onclick="toggleLetterLearned('${key}')" class="w-full py-2.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                            isLearned
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200'
+                        }">
+                            ${isLearned ? '✓ למדתי את האות הזו!' : 'סמני "למדתי ✓" (+2 🪙)'}
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        window.toggleGeniusBonus = function(key) {
+            const box = document.getElementById(`bonus-box-${key}`);
+            const arrow = document.getElementById(`bonus-arrow-${key}`);
+            if (!box) return;
+            const isHidden = box.classList.contains('hidden');
+            box.classList.toggle('hidden');
+            arrow.textContent = isHidden ? '▲' : '▼';
+            if (isHidden) playSfx('pop');
+        };
+
+        window.toggleLetterLearned = function(key) {
+            if (!state.learnedLetters.includes(key)) {
+                state.learnedLetters.push(key);
+                awardCoins(2, `כל הכבוד! למדת את האות ${key.toUpperCase()}`);
+                renderLearnTab();
+            } else {
+                showToast('כבר סימנת שלמדת את האות הזו! 🌟', '✅');
+            }
+        };
+
+        /* ==========================================================================
+           9. TAB 2: WORD BLENDER MACHINE
+           ========================================================================== */
+        let isBlendingRunning = false;
+
+        function renderBlenderTab() {
+            const lvl = getCurrentLevel();
+            const words = lvl.words;
+            if (!words.length) return;
+            if (state.blenderWordIndex >= words.length) state.blenderWordIndex = 0;
+            const currentWordObj = words[state.blenderWordIndex];
+
+            // Pills
+            const pills = document.getElementById('blender-word-pills');
+            pills.innerHTML = '';
+            words.forEach((w, idx) => {
+                const active = idx === state.blenderWordIndex;
+                const read = state.readWords.includes(w.word);
+                const pill = document.createElement('button');
+                pill.onclick = () => {
+                    state.blenderWordIndex = idx;
+                    state.blenderRevealMeaning = false;
+                    renderBlenderTab();
+                };
+                pill.className = `en-text px-3 py-1.5 rounded-xl text-sm font-extrabold transition cursor-pointer flex items-center gap-1 ${
+                    active
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : read
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                            : 'bg-slate-100 hover:bg-indigo-100 text-slate-600'
+                }`;
+                pill.innerHTML = `${w.word}${read && !active ? '<span class="text-[10px]">✓</span>' : ''}`;
+                pills.appendChild(pill);
+            });
+
+            // Read badge
+            const readBadge = document.getElementById('blender-read-badge');
+            readBadge.style.opacity = state.readWords.includes(currentWordObj.word) ? '1' : '0';
+
+            // Tiles
+            const tilesContainer = document.getElementById('blender-tiles');
+            tilesContainer.innerHTML = '';
+            currentWordObj.parts.forEach((part, idx) => {
+                const tile = document.createElement('button');
+                tile.id = `blend-tile-${idx}`;
+                tile.onclick = () => {
+                    triggerTileHighlight(idx);
+                    speakPhonics(part, false);
+                };
+                tile.className = 'en-text min-w-[70px] sm:min-w-[90px] h-[82px] sm:h-[100px] px-3.5 bg-white hover:bg-indigo-50 border-2 border-indigo-200 rounded-3xl text-4xl sm:text-5xl font-black text-indigo-700 shadow-sm transition-all cursor-pointer flex flex-col items-center justify-center active:scale-95';
+                const hebrewHint = LETTER_BANK[part] ? LETTER_BANK[part].hebrewSound.split(' ')[0] : '';
+                tile.innerHTML = `
+                    <span class="leading-none">${part}</span>
+                    <span class="font-hebrew text-xs font-bold text-slate-400 mt-1" dir="rtl">${hebrewHint}</span>
+                `;
+                tilesContainer.appendChild(tile);
+
+                if (idx < currentWordObj.parts.length - 1) {
+                    const plus = document.createElement('span');
+                    plus.className = 'text-xl font-black text-indigo-300 select-none';
+                    plus.textContent = '+';
+                    tilesContainer.appendChild(plus);
+                }
+            });
+
+            document.getElementById('blender-counter').textContent = `${state.blenderWordIndex + 1} / ${words.length}`;
+            renderBlenderMeaningBox(currentWordObj);
+        }
+
+        function renderBlenderMeaningBox(wordObj) {
+            const box = document.getElementById('blender-meaning-box');
+            const btn = document.getElementById('btn-toggle-meaning');
+            if (state.blenderRevealMeaning) {
+                btn.textContent = '🙈 הסתר פירוש';
+                box.innerHTML = `
+                    <div class="inline-flex items-center gap-3 bg-white border-2 border-emerald-200 px-6 py-3 rounded-2xl shadow-sm animate-pop">
+                        <span class="text-4xl">${wordObj.emoji}</span>
+                        <div class="text-right">
+                            <div class="en-text text-2xl font-black text-emerald-700 leading-tight">${wordObj.word}</div>
+                            <div class="text-base font-bold text-slate-700">${wordObj.hebrew}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                btn.textContent = '👀 גלה פירוש';
+                box.innerHTML = `<div class="text-sm text-slate-400 font-medium">נסי לחבר את הצלילים בקול לפני שתגלי את הפירוש 😉</div>`;
+            }
+        }
+
+        window.toggleBlenderMeaning = function() {
+            state.blenderRevealMeaning = !state.blenderRevealMeaning;
+            if (state.blenderRevealMeaning) playSfx('pop');
+            const lvl = getCurrentLevel();
+            renderBlenderMeaningBox(lvl.words[state.blenderWordIndex]);
+        };
+
+        function triggerTileHighlight(idx) {
+            const tile = document.getElementById(`blend-tile-${idx}`);
+            if (!tile) return;
+            tile.classList.add('tile-glow');
+            setTimeout(() => tile.classList.remove('tile-glow'), 420);
+        }
+
+        window.animateAndBlendWord = function() {
+            if (isBlendingRunning) return;
+            isBlendingRunning = true;
+
+            const lvl = getCurrentLevel();
+            const wordObj = lvl.words[state.blenderWordIndex];
+            const stepDelay = state.slowSpeech ? 440 : 300;
+
+            wordObj.parts.forEach((_, idx) => {
+                setTimeout(() => {
+                    triggerTileHighlight(idx);
+                    playSfx('pop');
+                }, idx * stepDelay);
+            });
+
+            setTimeout(() => {
+                wordObj.parts.forEach((_, idx) => {
+                    const t = document.getElementById(`blend-tile-${idx}`);
+                    if (t) t.classList.add('tile-glow');
+                });
+                speakWord(wordObj.word);
+                state.blenderRevealMeaning = true;
+                renderBlenderMeaningBox(wordObj);
+                markWordAsRead(wordObj.word, true);
+
+                setTimeout(() => {
+                    wordObj.parts.forEach((_, idx) => {
+                        const t = document.getElementById(`blend-tile-${idx}`);
+                        if (t) t.classList.remove('tile-glow');
+                    });
+                    isBlendingRunning = false;
+                    renderBlenderTab();
+                }, 650);
+            }, wordObj.parts.length * stepDelay + 100);
+        };
+
+        window.stepBlenderWord = function(delta) {
+            const lvl = getCurrentLevel();
+            state.blenderWordIndex = (state.blenderWordIndex + delta + lvl.words.length) % lvl.words.length;
+            state.blenderRevealMeaning = false;
+            renderBlenderTab();
+        };
+
+        /* ==========================================================================
+           10. TAB 3: SPELLING BUILDER (LISTEN & BUILD WORD)
+           ========================================================================== */
+        let spellState = {
+            words: [],
+            index: 0,
+            chosenIndices: [],
+            pool: [],
+            solved: false
+        };
+
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function startSpellingBuilder() {
+            const lvl = getCurrentLevel();
+            spellState = {
+                words: shuffleArray(lvl.words).slice(0, 8),
+                index: 0,
+                chosenIndices: [],
+                pool: [],
+                solved: false
+            };
+            setupSpellingWord();
+        }
+
+        function setupSpellingWord() {
+            const container = document.getElementById('spell-container');
+            if (spellState.index >= spellState.words.length) {
+                playSfx('fanfare');
+                launchConfetti();
+                awardCoins(15, 'אלופת הכתיבה! סיימת את סבב בניית המילים');
+                container.innerHTML = `
+                    <div class="bg-gradient-to-b from-teal-50 to-emerald-50 border-2 border-teal-200 rounded-3xl p-8 text-center animate-pop">
+                        <div class="text-6xl mb-3">✍️🏆</div>
+                        <h3 class="text-2xl font-black text-teal-900 mb-2">מדהים! בנית את כל המילים!</h3>
+                        <p class="text-sm text-slate-600 mb-6">קיבלת בונוס של +15 מטבעות ליתרה שלך 🪙</p>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <button onclick="startSpellingBuilder()" class="bg-white border-2 border-teal-300 text-teal-800 font-bold px-6 py-3 rounded-2xl cursor-pointer">🔄 סבב חדש</button>
+                            <button onclick="switchTab('quiz')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-6 py-3 rounded-2xl shadow-md cursor-pointer">🎯 עברי לחידון השלב!</button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const target = spellState.words[spellState.index];
+            const distractorPool = shuffleArray(Object.keys(LETTER_BANK).filter(k => k.length === 1 && !target.parts.includes(k))).slice(0, 2);
+            spellState.pool = shuffleArray([...target.parts, ...distractorPool]);
+            spellState.chosenIndices = [];
+            spellState.solved = false;
+
+            renderSpellingUI();
+            setTimeout(() => speakWord(target.word), 260);
+        }
+
+        function renderSpellingUI() {
+            const container = document.getElementById('spell-container');
+            const target = spellState.words[spellState.index];
+
+            const slotsHtml = target.parts.map((_, idx) => {
+                const poolIdx = spellState.chosenIndices[idx];
+                const filled = poolIdx !== undefined;
+                const val = filled ? spellState.pool[poolIdx] : '';
+                return `
+                    <button onclick="${filled && !spellState.solved ? `removeSpellLetter(${idx})` : ''}" class="en-text min-w-[66px] sm:min-w-[80px] h-[76px] sm:h-[88px] rounded-2xl border-3 text-4xl sm:text-5xl font-black flex items-center justify-center transition ${
+                        spellState.solved
+                            ? 'bg-emerald-500 border-emerald-600 text-white animate-pop'
+                            : filled
+                                ? 'bg-indigo-50 border-indigo-400 text-indigo-800 cursor-pointer hover:bg-rose-50'
+                                : 'bg-white border-dashed border-slate-300 text-slate-300'
+                    }">
+                        ${val || '_'}
+                    </button>
+                `;
+            }).join('');
+
+            const poolHtml = spellState.pool.map((part, pIdx) => {
+                const isUsed = spellState.chosenIndices.includes(pIdx);
+                return `
+                    <button onclick="pickSpellLetter(${pIdx})" ${isUsed || spellState.solved ? 'disabled' : ''} class="en-text min-w-[62px] sm:min-w-[74px] h-[68px] sm:h-[78px] px-3 rounded-2xl border-2 text-3xl sm:text-4xl font-black transition ${
+                        isUsed
+                            ? 'bg-slate-100 border-slate-200 text-slate-300 scale-90 cursor-default'
+                            : 'bg-white hover:bg-amber-50 border-indigo-200 hover:border-amber-400 text-slate-800 shadow-xs active:scale-95 cursor-pointer'
+                    }">
+                        ${part}
+                    </button>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-3">
+                    <span>מילה ${spellState.index + 1} מתוך ${spellState.words.length}</span>
+                    <span class="text-amber-600">+4 🪙 לכל מילה נכונה</span>
+                </div>
+
+                <div class="bg-slate-50/90 border-2 border-indigo-100 rounded-3xl p-5 sm:p-7 text-center">
+                    <h3 class="text-lg font-extrabold text-slate-800 mb-3">✍️ הקשיבי למילה והרכיבי אותה מהאותיות!</h3>
+
+                    <div class="flex items-center justify-center gap-4 my-3">
+                        <button onclick="speakWord('${target.word}')" class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg flex flex-col items-center justify-center transition active:scale-95 cursor-pointer">
+                            <span class="text-3xl">🔊</span>
+                            <span class="text-[11px] font-bold">שמעי</span>
+                        </button>
+                        <div class="bg-white border border-amber-200 px-5 py-3 rounded-2xl">
+                            <div class="text-4xl">${target.emoji}</div>
+                            <div class="text-base font-extrabold text-slate-800">${target.hebrew}</div>
+                        </div>
+                    </div>
+
+                    <!-- Answer Slots (LTR) -->
+                    <div class="flex items-center justify-center gap-2.5 sm:gap-3 my-6 flex-wrap" dir="ltr">
+                        ${slotsHtml}
+                    </div>
+
+                    <!-- Scrambled Letter Bank (LTR) -->
+                    <div class="flex items-center justify-center gap-2.5 flex-wrap pt-4 border-t border-slate-200" dir="ltr">
+                        ${poolHtml}
+                    </div>
+
+                    <!-- Feedback / Controls -->
+                    <div id="spell-feedback" class="mt-5 min-h-[48px] flex items-center justify-center gap-2">
+                        ${spellState.solved ? `
+                            <button onclick="nextSpellingWord()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-6 py-3 rounded-2xl shadow-md cursor-pointer animate-pop">
+                                🎉 מעולה! למילה הבאה ⬅️
+                            </button>
+                        ` : `
+                            <button onclick="clearSpellSlots()" class="text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-200/70 px-4 py-2 rounded-xl cursor-pointer">נקה אותיות</button>
+                            <button onclick="giveSpellHint()" class="text-xs font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 px-4 py-2 rounded-xl cursor-pointer">💡 רמז לאות הראשונה</button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.pickSpellLetter = function(poolIdx) {
+            if (spellState.solved) return;
+            const target = spellState.words[spellState.index];
+            if (spellState.chosenIndices.length >= target.parts.length) return;
+
+            spellState.chosenIndices.push(poolIdx);
+            speakPhonics(spellState.pool[poolIdx], false);
+
+            // Check completion
+            if (spellState.chosenIndices.length === target.parts.length) {
+                const built = spellState.chosenIndices.map(i => spellState.pool[i]).join('');
+                if (built === target.word) {
+                    spellState.solved = true;
+                    markWordAsRead(target.word, false);
+                    awardCoins(4);
+                    setTimeout(() => speakWord(target.word), 250);
+                } else {
+                    playSfx('wrong');
+                    recordMistake(target.word);
+                    renderSpellingUI();
+                    const fb = document.getElementById('spell-feedback');
+                    fb.innerHTML = `<span class="text-rose-600 font-bold text-sm bg-rose-50 px-4 py-2 rounded-xl border border-rose-200 animate-shake">כמעט! נסי שוב – לחצי על אות כדי להסיר אותה 💪</span>`;
+                    return;
+                }
+            }
+            renderSpellingUI();
+        };
+
+        window.removeSpellLetter = function(slotIdx) {
+            spellState.chosenIndices.splice(slotIdx, 1);
+            playSfx('pop');
+            renderSpellingUI();
+        };
+
+        window.clearSpellSlots = function() {
+            spellState.chosenIndices = [];
+            renderSpellingUI();
+        };
+
+        window.giveSpellHint = function() {
+            const target = spellState.words[spellState.index];
+            const firstPart = target.parts[0];
+            const idx = spellState.pool.indexOf(firstPart);
+            if (idx !== -1) {
+                spellState.chosenIndices = [idx];
+                speakPhonics(firstPart, false);
+                renderSpellingUI();
+            }
+        };
+
+        window.nextSpellingWord = function() {
+            spellState.index++;
+            setupSpellingWord();
+        };
+
+        window.startSpellingBuilder = startSpellingBuilder;
+
+        /* ==========================================================================
+           11. TAB 4: SMART MIXED QUIZ (+ MISTAKE PRACTICE 2x COINS MODE)
+           ========================================================================== */
+        let quizState = {
+            isMistakeMode: false,
+            questions: [],
+            currentIndex: 0,
+            correctCount: 0,
+            streakInQuiz: 0,
+            answeredCurrent: false
+        };
+
+        function generateQuizQuestions(wordList, isDigraphLevel = false) {
+            const words = shuffleArray(wordList);
+            const allOtherWords = Object.values(ALL_WORDS_MAP).filter(w => !wordList.some(lw => lw.word === w.word));
+            const lettersPool = Object.keys(LETTER_BANK).filter(k => k.length === (isDigraphLevel ? 2 : 1));
+            const lvl = getCurrentLevel();
+            const count = Math.min(6, Math.max(words.length, 4));
+            const questions = [];
+
+            for (let i = 0; i < count; i++) {
+                const target = words[i % words.length];
+                const type = (!isDigraphLevel && i === 3 && lvl.letters.length >= 4) ? 3 : (i % 3);
+
+                if (type === 0) {
+                    const distractors = shuffleArray([...wordList.filter(w => w.word !== target.word), ...shuffleArray(allOtherWords).slice(0, 3)]);
+                    questions.push({
+                        type: 'listen',
+                        word: target.word,
+                        promptHe: 'הקשיבי למילה ובחרי איך כותבים אותה:',
+                        correctAnswer: target.word,
+                        options: shuffleArray([target.word, ...distractors.slice(0, 3).map(d => d.word)]),
+                        revealInfo: `${target.emoji} ${target.word} = ${target.hebrew}`
+                    });
+                } else if (type === 1) {
+                    const distractors = shuffleArray([...wordList.filter(w => w.word !== target.word), ...shuffleArray(allOtherWords).slice(0, 3)]);
+                    questions.push({
+                        type: 'meaning',
+                        word: target.word,
+                        emoji: target.emoji,
+                        hebrew: target.hebrew,
+                        promptHe: 'איזו מילה באנגלית מתאימה לתמונה ולפירוש?',
+                        correctAnswer: target.word,
+                        options: shuffleArray([target.word, ...distractors.slice(0, 3).map(d => d.word)]),
+                        revealInfo: `${target.emoji} ${target.word} = ${target.hebrew}`
+                    });
+                } else if (type === 2) {
+                    const startPart = target.parts[0];
+                    const distractorLetters = shuffleArray(lettersPool.filter(l => l !== startPart)).slice(0, 3);
+                    questions.push({
+                        type: 'startLetter',
+                        word: target.word,
+                        emoji: target.emoji,
+                        hebrew: target.hebrew,
+                        promptHe: 'הקשיבי למילה: באיזה צליל היא מתחילה?',
+                        correctAnswer: startPart,
+                        options: shuffleArray([startPart, ...distractorLetters]),
+                        revealInfo: `המילה ${target.word} מתחילה ב-"${startPart}"`
+                    });
+                } else {
+                    // ABC Letter Name Recognition Question
+                    const targetLetter = lvl.letters[Math.floor(Math.random() * lvl.letters.length)];
+                    const info = LETTER_BANK[targetLetter];
+                    const distractorLetters = shuffleArray(lettersPool.filter(l => l !== targetLetter)).slice(0, 3);
+                    questions.push({
+                        type: 'abcName',
+                        letterKey: targetLetter,
+                        word: target.word,
+                        promptHe: 'הקשיבי לשם האות ב-ABC ובחרי את האות הנכונה:',
+                        correctAnswer: targetLetter.toUpperCase(),
+                        options: shuffleArray([targetLetter, ...distractorLetters]).map(l => l.toUpperCase()),
+                        revealInfo: `האות ${info.upper} (${info.lower}) נקראת "${info.hebrewName}"`
+                    });
+                }
+            }
+            return questions;
+        }
+
+        function startQuiz(isMistakeMode = false) {
+            const lvl = getCurrentLevel();
+            let pool = lvl.words;
+            if (isMistakeMode) {
+                pool = state.mistakes.map(w => ALL_WORDS_MAP[w]).filter(Boolean);
+                if (!pool.length) {
+                    showToast('בנק החיזוק ריק! כל הכבוד 🌟', '🎉');
+                    return;
+                }
+            }
+            quizState = {
+                isMistakeMode,
+                questions: generateQuizQuestions(pool, !isMistakeMode && lvl.id === 6),
+                currentIndex: 0,
+                correctCount: 0,
+                streakInQuiz: 0,
+                answeredCurrent: false
+            };
+            renderQuizQuestion();
+        }
+
+        window.startQuiz = startQuiz;
+
+        window.startMistakePractice = function() {
+            if (!state.mistakes.length) {
+                showToast('אין מילים בבנק החיזוק כרגע!', '✨');
+                return;
+            }
+            state.currentTab = 'quiz';
+            hideAllTabPanels();
+            document.getElementById('tab-quiz').classList.remove('hidden');
+            startQuiz(true);
+        };
+
+        function renderQuizQuestion() {
+            const container = document.getElementById('quiz-container');
+            const q = quizState.questions[quizState.currentIndex];
+            if (!q) {
+                renderQuizSummary();
+                return;
+            }
+
+            quizState.answeredCurrent = false;
+            const total = quizState.questions.length;
+            const dotsHtml = quizState.questions.map((_, idx) => {
+                const cls = idx < quizState.currentIndex ? 'bg-emerald-500' : idx === quizState.currentIndex ? 'bg-indigo-600 scale-125' : 'bg-slate-200';
+                return `<div class="w-3 h-3 rounded-full transition-all ${cls}"></div>`;
+            }).join('');
+
+            let stimulusHtml = '';
+            if (q.type === 'listen') {
+                stimulusHtml = `
+                    <button onclick="speakWord('${q.word}')" class="mx-auto my-4 w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg flex flex-col items-center justify-center transition active:scale-95 cursor-pointer">
+                        <span class="text-4xl">🔊</span>
+                        <span class="text-xs font-bold mt-1">שמעי שוב</span>
+                    </button>
+                `;
+            } else if (q.type === 'abcName') {
+                stimulusHtml = `
+                    <button onclick="speakLetterName('${q.letterKey}')" class="mx-auto my-4 w-24 h-24 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-lg flex flex-col items-center justify-center transition active:scale-95 cursor-pointer">
+                        <span class="text-4xl">🔤</span>
+                        <span class="text-xs font-bold mt-1">שמעי שם</span>
+                    </button>
+                `;
+            } else if (q.type === 'meaning') {
+                stimulusHtml = `
+                    <div class="my-4 inline-flex flex-col items-center bg-amber-50 border-2 border-amber-200 px-8 py-4 rounded-3xl">
+                        <span class="text-5xl mb-1">${q.emoji}</span>
+                        <span class="text-2xl font-extrabold text-slate-800">${q.hebrew}</span>
+                    </div>
+                `;
+            } else {
+                stimulusHtml = `
+                    <div class="my-4 flex items-center justify-center gap-4">
+                        <button onclick="speakWord('${q.word}')" class="w-20 h-20 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md flex flex-col items-center justify-center transition active:scale-95 cursor-pointer">
+                            <span class="text-3xl">🔊</span>
+                            <span class="text-[11px] font-bold">השמע</span>
+                        </button>
+                        <div class="bg-white border border-slate-200 px-5 py-3 rounded-2xl text-right">
+                            <div class="text-3xl">${q.emoji}</div>
+                            <div class="text-sm font-bold text-slate-600">${q.hebrew}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                ${quizState.isMistakeMode ? `<div class="mb-3 bg-rose-100 text-rose-800 text-xs font-black px-4 py-2 rounded-2xl text-center">🎯 תרגול בנק החיזוק – כל תשובה נכונה שווה 10 מטבעות (2x)! 🪙</div>` : ''}
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-bold text-slate-500">שאלה ${quizState.currentIndex + 1} מתוך ${total}</span>
+                    <div class="flex items-center gap-2">${dotsHtml}</div>
+                </div>
+
+                <div class="bg-slate-50/90 border-2 border-indigo-100 rounded-3xl p-5 sm:p-7 text-center">
+                    <h3 class="text-lg sm:text-xl font-extrabold text-slate-800">${q.promptHe}</h3>
+                    ${stimulusHtml}
+
+                    <div class="grid grid-cols-2 gap-3 sm:gap-4 mt-5" dir="ltr">
+                        ${q.options.map(opt => `
+                            <button onclick="handleQuizAnswer(this, '${opt}')" class="en-text bg-white hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 rounded-2xl py-4 sm:py-5 px-4 text-3xl sm:text-4xl font-black text-slate-800 shadow-xs transition active:scale-95 cursor-pointer">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div id="quiz-feedback" class="mt-5 min-h-[56px] flex items-center justify-center"></div>
+                </div>
+            `;
+
+            if (q.type === 'listen' || q.type === 'startLetter') {
+                setTimeout(() => speakWord(q.word), 260);
+            } else if (q.type === 'abcName') {
+                setTimeout(() => speakLetterName(q.letterKey), 260);
+            }
+        }
+
+        window.handleQuizAnswer = function(btnEl, chosen) {
+            if (quizState.answeredCurrent) return;
+            const q = quizState.questions[quizState.currentIndex];
+            const fb = document.getElementById('quiz-feedback');
+
+            if (chosen === q.correctAnswer) {
+                quizState.answeredCurrent = true;
+                quizState.correctCount++;
+                quizState.streakInQuiz++;
+
+                const baseCoins = quizState.isMistakeMode ? 10 : 5;
+                let bonus = 0;
+                if (quizState.streakInQuiz > 0 && quizState.streakInQuiz % 3 === 0) {
+                    bonus = 10;
+                    showToast('בונוס רצף 3 תשובות נכונות! +10 🪙', '🔥');
+                }
+                awardCoins(baseCoins + bonus);
+                markWordAsRead(q.word, false);
+
+                // If in mistake bank mode, remove mastered word!
+                if (quizState.isMistakeMode) {
+                    state.mistakes = state.mistakes.filter(w => w !== q.word);
+                    updateHeaderUI();
+                    scheduleSave();
+                }
+
+                btnEl.classList.remove('bg-white', 'border-slate-200', 'text-slate-800');
+                btnEl.classList.add('bg-emerald-500', 'border-emerald-600', 'text-white', 'animate-pop');
+                setTimeout(() => speakWord(q.word), 220);
+
+                fb.innerHTML = `
+                    <div class="flex flex-col sm:flex-row items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-900 px-5 py-3 rounded-2xl w-full justify-between animate-pop">
+                        <div class="font-bold text-sm">🎉 מעולה! <span class="font-normal">(${q.revealInfo})</span></div>
+                        <button onclick="nextQuizQuestion()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-5 py-2 rounded-xl text-sm cursor-pointer shrink-0">לשאלה הבאה ⬅️</button>
+                    </div>
+                `;
+            } else {
+                quizState.streakInQuiz = 0;
+                playSfx('wrong');
+                recordMistake(q.word);
+                btnEl.classList.add('animate-shake', 'bg-rose-50', 'border-rose-300', 'text-rose-500', 'opacity-65');
+                btnEl.disabled = true;
+                fb.innerHTML = `<div class="text-rose-600 font-bold text-sm bg-rose-50 px-4 py-2 rounded-xl border border-rose-200">כמעט! נסי שוב 💪 (שמרתי את המילה לבנק החיזוק)</div>`;
+            }
+        };
+
+        window.nextQuizQuestion = function() {
+            quizState.currentIndex++;
+            renderQuizQuestion();
+        };
+
+        function renderQuizSummary() {
+            const lvl = getCurrentLevel();
+            const container = document.getElementById('quiz-container');
+
+            if (!quizState.isMistakeMode) {
+                if (!state.completedLevels.includes(lvl.id)) {
+                    state.completedLevels.push(lvl.id);
+                    awardCoins(25, `סיימת את ${lvl.shortName}!`);
+                } else {
+                    awardCoins(10, `בונוס חזרה על ${lvl.shortName}`);
+                }
+            } else {
+                awardCoins(15, 'בונוס סיום בנק החיזוק!');
+            }
+
+            updateHeaderUI();
+            renderLevelSelector();
+            renderLevelHeader();
+            playSfx('fanfare');
+            launchConfetti();
+
+            const nextLevel = LEVELS.find(l => l.id === lvl.id + 1);
+
+            container.innerHTML = `
+                <div class="bg-gradient-to-b from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-3xl p-7 sm:p-10 text-center animate-pop">
+                    <div class="text-6xl mb-3">🏆🪙</div>
+                    <h3 class="text-2xl sm:text-3xl font-black text-indigo-900 mb-2">
+                        ${quizState.isMistakeMode ? 'כל הכבוד! חיזקת את המילים הקשות!' : `אלופה! סיימת את ${lvl.shortName}!`}
+                    </h3>
+                    <p class="text-slate-600 font-medium mb-6">המטבעות נוספו לבנק האנגלית שלך! בדקי מה אפשר לקנות בחנות הפרסים 🛍️</p>
+
+                    <div class="flex flex-wrap items-center justify-center gap-3">
+                        <button onclick="startQuiz(false)" class="bg-white hover:bg-slate-100 border-2 border-indigo-200 text-indigo-700 font-bold px-6 py-3 rounded-2xl cursor-pointer">🔄 שחקי שוב</button>
+                        ${nextLevel && !quizState.isMistakeMode ? `
+                            <button onclick="selectLevel(${nextLevel.id})" class="bg-gradient-to-l from-indigo-600 to-purple-600 text-white font-extrabold px-7 py-3 rounded-2xl shadow-lg cursor-pointer">
+                                קדימה ל${nextLevel.shortName}! 🚀
+                            </button>
+                        ` : `
+                            <button onclick="openShopModal('app')" class="bg-gradient-to-l from-pink-500 to-purple-600 text-white font-extrabold px-7 py-3 rounded-2xl shadow-lg cursor-pointer">
+                                🛍️ לחנות הפרסים!
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        /* ==========================================================================
+           12. LEVEL 7: SENTENCE READING STUDIO (12 FUN SENTENCES)
+           ========================================================================== */
+        function renderSentencesLevel() {
+            const lvl = LEVELS.find(l => l.id === 7);
+            const container = document.getElementById('tab-sentences');
+
+            const cardsHtml = lvl.sentences.map((s, idx) => {
+                const isRead = state.readSentences.includes(s.id);
+                const wordsHtml = s.text.split(' ').map(w => `
+                    <button onclick="speakWord('${w.replace(/[^a-zA-Z]/g, '')}')" class="en-text px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-amber-100 text-indigo-900 font-black text-xl sm:text-2xl transition active:scale-95 cursor-pointer">
+                        ${w}
+                    </button>
+                `).join('');
+
+                return `
+                    <div class="rounded-3xl p-5 border-2 transition ${isRead ? 'bg-emerald-50/50 border-emerald-200' : 'bg-white border-indigo-100 shadow-xs'}">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-extrabold text-slate-400">משפט #${idx + 1}</span>
+                            <span class="text-2xl">${s.emoji}</span>
+                        </div>
+
+                        <!-- Clickable Word-by-Word Sentence -->
+                        <div class="flex flex-wrap gap-2 justify-center py-3" dir="ltr">
+                            ${wordsHtml}
+                        </div>
+
+                        <!-- Collapsible Hebrew Translation -->
+                        <div id="sent-he-${s.id}" class="hidden text-center text-sm font-bold text-slate-600 bg-amber-50 border border-amber-200 rounded-xl py-2 px-3 my-2 animate-pop">
+                            ${s.hebrew}
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-center gap-2 mt-4 pt-3 border-t border-slate-100">
+                            <button onclick="speakWord('${s.text}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl cursor-pointer transition active:scale-95">
+                                🔊 קרא משפט מלא
+                            </button>
+                            <button onclick="toggleSentenceTranslation('${s.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs sm:text-sm px-4 py-2 rounded-xl cursor-pointer transition">
+                                👀 תרגום לעברית
+                            </button>
+                            <button onclick="markSentenceRead('${s.id}')" class="${isRead ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-teal-600 hover:bg-teal-700 text-white'} font-extrabold text-xs sm:text-sm px-4 py-2 rounded-xl cursor-pointer transition active:scale-95">
+                                ${isRead ? '✓ קראתי!' : 'קראתי לבד! (+5 🪙)'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800">📖 קוראים משפטים אמיתיים באנגלית!</h3>
+                        <p class="text-sm text-slate-500">לחצי על כל מילה בנפרד אם את צריכה עזרה, או קראי בקול וסמני "קראתי לבד!" כדי להרוויח <strong class="text-amber-600">+5 🪙</strong> למשפט.</p>
+                    </div>
+                    <div class="bg-indigo-50 text-indigo-800 font-extrabold text-sm px-4 py-2 rounded-2xl shrink-0">
+                        הושלמו: ${state.readSentences.length} / ${lvl.sentences.length}
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${cardsHtml}
+                </div>
+            `;
+        }
+
+        window.toggleSentenceTranslation = function(id) {
+            const el = document.getElementById(`sent-he-${id}`);
+            if (el) el.classList.toggle('hidden');
+        };
+
+        window.markSentenceRead = function(id) {
+            if (!state.readSentences.includes(id)) {
+                state.readSentences.push(id);
+                awardCoins(5, 'כל הכבוד על קריאת המשפט!');
+                if (state.readSentences.length >= 6 && !state.completedLevels.includes(7)) {
+                    state.completedLevels.push(7);
+                    awardCoins(25, 'סיימת את שלב המשפטים!');
+                    launchConfetti();
+                    playSfx('fanfare');
+                }
+                renderLevelSelector();
+                renderLevelHeader();
+                renderSentencesLevel();
+            } else {
+                showToast('כבר קראת את המשפט הזה! 🌟', '✅');
+            }
+        };
+
+        /* ==========================================================================
+           13. TAB 5: MISTAKE BANK & b/d/p/q RAPID CHALLENGE
+           ========================================================================== */
+        const BD_QUESTIONS_POOL = [
+            { mode: 'sound', target: 'b', word: 'bat', hebrew: 'עטלף', emoji: '🦇', prompt: 'איזו אות מתחילה את המילה?' },
+            { mode: 'sound', target: 'd', word: 'dog', hebrew: 'כלב', emoji: '🐶', prompt: 'איזו אות מתחילה את המילה?' },
+            { mode: 'sound', target: 'p', word: 'pig', hebrew: 'חזיר', emoji: '🐷', prompt: 'איזו אות מתחילה את המילה?' },
+            { mode: 'sound', target: 'q', word: 'queen', hebrew: 'מלכה', emoji: '👑', prompt: 'איזו אות מתחילה את המילה?' },
+            { mode: 'sound', target: 'b', word: 'bed', hebrew: 'מיטה', emoji: '🛏️', prompt: 'איזו אות מתחילה את המילה?' },
+            { mode: 'sound', target: 'd', word: 'dad', hebrew: 'אבא', emoji: '👨', prompt: 'איזו אות מתחילה את המילה?' },
+            { mode: 'sound', target: 'p', word: 'pan', hebrew: 'מחבת', emoji: '🍳', prompt: 'איזו אות מתחילה את המילה?' },
+            { mode: 'sound', target: 'b', word: 'bus', hebrew: 'אוטובוס', emoji: '🚌', prompt: 'איזו אות מתחילה את המילה?' },
+            { mode: 'match', target: 'b', upper: 'B', prompt: 'מצאי את האות הקטנה של:' },
+            { mode: 'match', target: 'd', upper: 'D', prompt: 'מצאי את האות הקטנה של:' },
+            { mode: 'match', target: 'p', upper: 'P', prompt: 'מצאי את האות הקטנה של:' },
+            { mode: 'match', target: 'q', upper: 'Q', prompt: 'מצאי את האות הקטנה של:' }
+        ];
+
+        let bdGame = { questions: [], index: 0, score: 0, locked: false };
+
+        function renderChallengesTab() {
+            // Render Mistake Bank
+            const mContainer = document.getElementById('mistake-bank-content');
+            const mBtn = document.getElementById('btn-start-mistake-quiz');
+            if (!state.mistakes.length) {
+                mBtn.classList.add('hidden');
+                mContainer.innerHTML = `
+                    <div class="bg-white/80 rounded-2xl p-4 text-center text-sm font-bold text-emerald-700 border border-emerald-200">
+                        🌟 בנק החיזוק ריק כרגע! אין לך מילים שטעית בהן – עבודה נהדרת!
+                    </div>
+                `;
+            } else {
+                mBtn.classList.remove('hidden');
+                mContainer.innerHTML = `
+                    <div class="flex flex-wrap gap-2" dir="ltr">
+                        ${state.mistakes.map(w => {
+                            const obj = ALL_WORDS_MAP[w];
+                            return `
+                                <button onclick="speakWord('${w}')" class="bg-white hover:bg-rose-100 border border-rose-200 px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-2xs cursor-pointer transition">
+                                    <span>${obj ? obj.emoji : '🔤'}</span>
+                                    <span class="en-text font-black text-rose-900">${w}</span>
+                                    <span class="font-hebrew text-xs text-slate-500" dir="rtl">${obj ? obj.hebrew : ''}</span>
+                                    <span class="text-xs">🔊</span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            // Render b/d/p/q Start
+            document.getElementById('bd-best-score').textContent = `${state.bdBestScore} / 10`;
+            renderBdStartScreen();
+        }
+
+        function renderBdStartScreen() {
+            document.getElementById('bd-game-area').innerHTML = `
+                <h4 class="text-lg font-extrabold text-slate-800 mb-1">⚡ אתגר 10 השאלות המהיר</h4>
+                <p class="text-xs sm:text-sm text-slate-500 mb-4">כל תשובה נכונה מזכה ב-3 מטבעות 🪙!</p>
+                <button onclick="startBdGame()" class="bg-gradient-to-l from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-extrabold px-7 py-3 rounded-2xl shadow-md cursor-pointer transition active:scale-95">
+                    🚀 התחילי אתגר b / d / p / q
+                </button>
+            `;
+        }
+
+        window.startBdGame = function() {
+            bdGame = {
+                questions: shuffleArray(BD_QUESTIONS_POOL).slice(0, 10),
+                index: 0,
+                score: 0,
+                locked: false
+            };
+            renderBdQuestion();
+        };
+
+        function renderBdQuestion() {
+            const area = document.getElementById('bd-game-area');
+            if (bdGame.index >= bdGame.questions.length) {
+                if (bdGame.score > state.bdBestScore) {
+                    state.bdBestScore = bdGame.score;
+                    scheduleSave();
+                }
+                document.getElementById('bd-best-score').textContent = `${state.bdBestScore} / 10`;
+                if (bdGame.score >= 8) {
+                    playSfx('fanfare');
+                    launchConfetti();
+                    awardCoins(15, 'אלופת ה-b/d/p/q!');
+                }
+                area.innerHTML = `
+                    <div class="py-3 animate-pop">
+                        <div class="text-5xl mb-2">${bdGame.score >= 8 ? '👑' : '🌟'}</div>
+                        <h4 class="text-2xl font-black text-teal-900">סיימת עם ${bdGame.score} מתוך 10!</h4>
+                        <button onclick="startBdGame()" class="mt-4 bg-teal-600 hover:bg-teal-700 text-white font-extrabold px-6 py-2.5 rounded-2xl cursor-pointer">🔄 שחקי שוב</button>
+                    </div>
+                `;
+                return;
+            }
+
+            bdGame.locked = false;
+            const q = bdGame.questions[bdGame.index];
+            const options = shuffleArray(['b', 'd', 'p', 'q']);
+
+            const visual = q.mode === 'sound'
+                ? `<div class="flex items-center justify-center gap-4 my-3">
+                        <button onclick="speakWord('${q.word}')" class="w-16 h-16 rounded-full bg-teal-600 text-white shadow flex items-center justify-center text-2xl cursor-pointer">🔊</button>
+                        <div class="bg-slate-50 border border-slate-200 px-4 py-2 rounded-2xl">
+                            <div class="text-3xl">${q.emoji}</div>
+                            <div class="text-xs font-bold text-slate-700">${q.hebrew}</div>
+                        </div>
+                   </div>`
+                : `<div class="my-3 inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-teal-50 border-2 border-teal-200 en-text text-5xl font-black text-teal-800">${q.upper}</div>`;
+
+            area.innerHTML = `
+                <div class="flex justify-between text-xs font-bold text-slate-500 mb-2">
+                    <span>שאלה ${bdGame.index + 1} / 10</span>
+                    <span class="text-teal-700">ניקוד: ${bdGame.score}</span>
+                </div>
+                <div class="font-extrabold text-slate-800">${q.prompt}</div>
+                ${visual}
+                <div class="grid grid-cols-4 gap-3 max-w-md mx-auto mt-4" dir="ltr">
+                    ${options.map(opt => `
+                        <button onclick="answerBdQuestion(this, '${opt}')" class="en-text bg-slate-50 hover:bg-teal-50 border-2 border-slate-200 hover:border-teal-400 rounded-2xl py-3.5 text-4xl font-black text-slate-800 cursor-pointer transition active:scale-95">${opt}</button>
+                    `).join('')}
+                </div>
+                <div id="bd-feedback" class="mt-3 min-h-[26px] text-sm font-bold"></div>
+            `;
+
+            setTimeout(() => q.mode === 'sound' ? speakWord(q.word) : speakPhonics(q.target, false), 220);
+        }
+
+        window.answerBdQuestion = function(btnEl, chosen) {
+            if (bdGame.locked) return;
+            bdGame.locked = true;
+            const q = bdGame.questions[bdGame.index];
+            const fb = document.getElementById('bd-feedback');
+
+            if (chosen === q.target) {
+                bdGame.score++;
+                awardCoins(3);
+                btnEl.classList.add('bg-emerald-500', 'border-emerald-600', 'text-white', 'animate-pop');
+                fb.innerHTML = `<span class="text-emerald-700">✨ בול! (+3 🪙)</span>`;
+            } else {
+                playSfx('wrong');
+                btnEl.classList.add('bg-rose-100', 'border-rose-400', 'text-rose-600', 'animate-shake');
+                fb.innerHTML = `<span class="text-rose-600">התשובה הנכונה: <strong class="en-text text-lg text-slate-900 mx-1">${q.target}</strong></span>`;
+            }
+
+            setTimeout(() => {
+                bdGame.index++;
+                renderBdQuestion();
+            }, 1050);
+        };
+
+        /* ==========================================================================
+           14. REWARDS SHOP MODAL (APP ITEMS + CUSTOM PARENT REWARDS)
+           ========================================================================== */
+        window.openShopModal = function(tab = 'app') {
+            state.shopTab = tab;
+            document.getElementById('shop-modal').classList.remove('hidden');
+            renderShopContent();
+        };
+
+        window.closeShopModal = function() {
+            document.getElementById('shop-modal').classList.add('hidden');
+        };
+
+        window.switchShopTab = function(tab) {
+            state.shopTab = tab;
+            renderShopContent();
+        };
+
+        function renderShopContent() {
+            document.getElementById('shop-balance').textContent = `${state.coins} 🪙`;
+
+            const tabApp = document.getElementById('shop-tab-app');
+            const tabParent = document.getElementById('shop-tab-parent');
+            tabApp.className = `px-4 py-2.5 rounded-t-2xl font-extrabold text-sm transition cursor-pointer ${state.shopTab === 'app' ? 'bg-white text-indigo-700 border-t border-x border-slate-200' : 'text-slate-500 hover:text-slate-800'}`;
+            tabParent.className = `px-4 py-2.5 rounded-t-2xl font-extrabold text-sm transition cursor-pointer ${state.shopTab === 'parent' ? 'bg-white text-pink-600 border-t border-x border-slate-200' : 'text-slate-500 hover:text-slate-800'}`;
+
+            const body = document.getElementById('shop-body');
+
+            if (state.shopTab === 'app') {
+                body.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Avatars -->
+                        <div>
+                            <h3 class="font-black text-slate-800 mb-2.5">👧 דמויות (אווטארים)</h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                ${SHOP_AVATARS.map(item => renderShopItemCard(item, 'avatar')).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Pets -->
+                        <div>
+                            <h3 class="font-black text-slate-800 mb-2.5">🐾 חיות מחמד מעודדות</h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                ${SHOP_PETS.map(item => renderShopItemCard(item, 'pet')).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Themes -->
+                        <div>
+                            <h3 class="font-black text-slate-800 mb-2.5">🎨 ערכות צבעים לאתר</h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                ${SHOP_THEMES.map(item => renderShopItemCard(item, 'theme')).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = `
+                    <div class="space-y-5">
+                        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs sm:text-sm text-amber-950">
+                            <strong>🎁 איך זה עובד?</strong> אבא או אמא מגדירים כאן פרסים אמיתיים! כשצברת מספיק מטבעות, לחצי על <strong>"מימשתי פרס!"</strong> והראי להורים.
+                        </div>
+
+                        <!-- Parent Rewards List -->
+                        <div class="space-y-3">
+                            ${state.parentRewards.map(r => {
+                                const canAfford = state.coins >= r.cost;
+                                const pct = Math.min(100, Math.round((state.coins / r.cost) * 100));
+                                return `
+                                    <div class="bg-white border-2 ${canAfford ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'} rounded-2xl p-4">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div class="flex-1">
+                                                <div class="font-extrabold text-slate-800 text-base">${r.title}</div>
+                                                <div class="text-xs font-bold text-amber-700 mt-0.5">מחיר: ${r.cost} 🪙 (התקדמות: ${pct}%)</div>
+                                                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-2">
+                                                    <div class="h-full ${canAfford ? 'bg-emerald-500' : 'bg-amber-400'} rounded-full" style="width: ${pct}%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                <button onclick="redeemParentReward('${r.id}')" ${!canAfford ? 'disabled' : ''} class="px-4 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition ${canAfford ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
+                                                    ${canAfford ? '🎉 מימשתי פרס!' : `חסרים ${r.cost - state.coins} 🪙`}
+                                                </button>
+                                                <button onclick="deleteParentReward('${r.id}')" class="w-9 h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs cursor-pointer" title="מחק פרס">🗑️</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+
+                        <!-- Add New Custom Reward Form -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                            <h4 class="font-extrabold text-sm text-slate-700 mb-3">➕ הוספת פרס חדש מאבא/אמא</h4>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input id="new-reward-title" type="text" placeholder="למשל: פיצה משפחתית 🍕" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:outline-none focus:border-indigo-500" />
+                                <input id="new-reward-cost" type="number" min="10" step="10" placeholder="מחיר במטבעות" class="w-full sm:w-36 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold focus:outline-none focus:border-indigo-500" />
+                                <button onclick="addParentReward()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm px-5 py-2.5 rounded-xl cursor-pointer transition">הוסף</button>
+                            </div>
+                        </div>
+
+                        <!-- Redemption History -->
+                        ${state.redemptionHistory.length ? `
+                            <div>
+                                <h4 class="font-extrabold text-sm text-slate-700 mb-2">📜 היסטוריית פרסים שמומשו</h4>
+                                <div class="space-y-1.5">
+                                    ${state.redemptionHistory.slice(0, 6).map(h => `
+                                        <div class="flex justify-between items-center text-xs bg-emerald-50/70 border border-emerald-200 rounded-xl px-3.5 py-2 text-emerald-900 font-medium">
+                                            <span>🎉 ${h.title} (${h.cost} 🪙)</span>
+                                            <span class="text-emerald-700">${h.date}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+        }
+
+        function renderShopItemCard(item, category) {
+            const owned = state.ownedItems.includes(item.id);
+            const equipped =
+                (category === 'avatar' && state.equippedAvatar === item.id) ||
+                (category === 'pet' && state.equippedPet === item.id) ||
+                (category === 'theme' && state.equippedTheme === item.id);
+            const canAfford = state.coins >= item.cost;
+
+            const visual = category === 'theme'
+                ? `<div class="w-12 h-12 rounded-2xl bg-gradient-to-br ${item.preview} flex items-center justify-center text-2xl mx-auto mb-2 shadow">${item.icon}</div>`
+                : `<div class="text-4xl mb-2">${item.emoji}</div>`;
+
+            let btnHtml = '';
+            if (equipped) {
+                btnHtml = `<span class="block w-full py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black">✓ פעיל עכשיו</span>`;
+            } else if (owned) {
+                btnHtml = `<button onclick="equipShopItem('${item.id}', '${category}')" class="w-full py-1.5 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-xs font-extrabold cursor-pointer">בחרי</button>`;
+            } else {
+                btnHtml = `<button onclick="buyShopItem('${item.id}', '${category}', ${item.cost})" ${!canAfford ? 'disabled' : ''} class="w-full py-1.5 rounded-xl text-xs font-extrabold transition ${canAfford ? 'bg-amber-400 hover:bg-amber-500 text-amber-950 cursor-pointer' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">קני ב-${item.cost} 🪙</button>`;
+            }
+
+            return `
+                <div class="bg-slate-50 border-2 ${equipped ? 'border-emerald-400 bg-emerald-50/40' : 'border-slate-200'} rounded-2xl p-3 text-center flex flex-col justify-between">
+                    <div>
+                        ${visual}
+                        <div class="font-extrabold text-xs sm:text-sm text-slate-800 mb-2">${item.name}</div>
+                    </div>
+                    ${btnHtml}
+                </div>
+            `;
+        }
+
+        window.buyShopItem = function(id, category, cost) {
+            if (state.coins < cost) return;
+            state.coins -= cost;
+            state.ownedItems.push(id);
+            equipShopItem(id, category, false);
+            playSfx('fanfare');
+            launchConfetti();
+            showToast('תתחדשי! הרכישה הושלמה 🎉', '🛍️');
+            updateHeaderUI();
+            renderShopContent();
+            scheduleSave();
+        };
+
+        window.equipShopItem = function(id, category, withFeedback = true) {
+            if (category === 'avatar') state.equippedAvatar = id;
+            if (category === 'pet') state.equippedPet = id;
+            if (category === 'theme') {
+                state.equippedTheme = id;
+                applyTheme();
+            }
+            if (withFeedback) playSfx('pop');
+            updateHeaderUI();
+            renderShopContent();
+            scheduleSave();
+        };
+
+        window.addParentReward = function() {
+            const titleInput = document.getElementById('new-reward-title');
+            const costInput = document.getElementById('new-reward-cost');
+            const title = titleInput.value.trim();
+            const cost = parseInt(costInput.value, 10);
+            if (!title || isNaN(cost) || cost < 10) {
+                showToast('נא למלא שם פרס ומחיר (לפחות 10 מטבעות)', '⚠️');
+                return;
+            }
+            state.parentRewards.push({ id: 'pr_' + Date.now(), title, cost });
+            playSfx('pop');
+            renderShopContent();
+            scheduleSave();
+        };
+
+        window.deleteParentReward = function(id) {
+            state.parentRewards = state.parentRewards.filter(r => r.id !== id);
+            renderShopContent();
+            scheduleSave();
+        };
+
+        window.redeemParentReward = function(id) {
+            const reward = state.parentRewards.find(r => r.id === id);
+            if (!reward || state.coins < reward.cost) return;
+            state.coins -= reward.cost;
+            state.redemptionHistory.unshift({
+                title: reward.title,
+                cost: reward.cost,
+                date: new Date().toLocaleDateString('he-IL')
+            });
+            playSfx('fanfare');
+            launchConfetti();
+            showToast(`יש! מימשת את הפרס: ${reward.title}`, '🎁');
+            updateHeaderUI();
+            renderShopContent();
+            scheduleSave();
+        };
+
+        /* ==========================================================================
+           15. VOICE SELECTOR MODAL
+           ========================================================================== */
+        window.openVoiceModal = function() {
+            initVoices();
+            const list = document.getElementById('voice-list');
+            if (!availableEnglishVoices.length) {
+                list.innerHTML = `<div class="text-sm text-slate-500 text-center py-4">משתמש בקול ברירת המחדל של הדפדפן</div>`;
+            } else {
+                list.innerHTML = availableEnglishVoices.slice(0, 12).map(v => {
+                    const isSel = selectedVoice && selectedVoice.name === v.name;
+                    return `
+                        <button onclick="selectEnglishVoice('${v.name.replace(/'/g, "\\'")}')" class="w-full text-right px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-between cursor-pointer transition ${isSel ? 'bg-indigo-50 border-indigo-400 text-indigo-900' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'}">
+                            <span class="en-text truncate">${v.name}</span>
+                            <span class="text-[11px] text-slate-400 shrink-0 mr-2">${v.lang} ${isSel ? '✓' : ''}</span>
+                        </button>
+                    `;
+                }).join('');
+            }
+            document.getElementById('voice-modal').classList.remove('hidden');
+        };
+
+        window.closeVoiceModal = function() {
+            document.getElementById('voice-modal').classList.add('hidden');
+        };
+
+        window.selectEnglishVoice = function(voiceName) {
+            const match = availableEnglishVoices.find(v => v.name === voiceName);
+            if (match) {
+                selectedVoice = match;
+                state.preferredVoiceName = match.name;
+                scheduleSave();
+                openVoiceModal();
+                speakWord('Great choice!');
+            }
+        };
+
+        /* ==========================================================================
+           16. FULL ABC BOARD MODAL (A-Z)
+           ========================================================================== */
+        window.openAbcModal = function() {
+            document.getElementById('abc-modal').classList.remove('hidden');
+            renderAbcBoard();
+        };
+
+        window.closeAbcModal = function() {
+            document.getElementById('abc-modal').classList.add('hidden');
+        };
+
+        window.setAbcBoardMode = function(mode) {
+            state.abcBoardMode = mode;
+            playSfx('pop');
+            renderAbcBoard();
+        };
+
+        function renderAbcBoard() {
+            const btnName = document.getElementById('abc-mode-name');
+            const btnSound = document.getElementById('abc-mode-sound');
+
+            btnName.className = `px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer ${
+                state.abcBoardMode === 'name'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50'
+            }`;
+            btnSound.className = `px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer ${
+                state.abcBoardMode === 'sound'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50'
+            }`;
+
+            const grid = document.getElementById('abc-board-grid');
+            grid.innerHTML = ALPHABET_ORDER.map(key => {
+                const info = LETTER_BANK[key];
+                const isLearned = state.learnedLetters.includes(key);
+                const subLabel = state.abcBoardMode === 'name' ? info.hebrewName : info.hebrewSound.split(' ')[0];
+                const accentCls = state.abcBoardMode === 'name'
+                    ? 'hover:border-indigo-400 hover:bg-indigo-50 text-indigo-700'
+                    : 'hover:border-emerald-400 hover:bg-emerald-50 text-emerald-700';
+
+                return `
+                    <button onclick="tapAbcTile(this, '${key}')" class="relative bg-white border-2 ${isLearned ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'} ${accentCls} rounded-2xl p-3 flex flex-col items-center justify-center shadow-2xs transition active:scale-95 cursor-pointer">
+                        ${isLearned ? `<span class="absolute top-1.5 right-1.5 text-[10px] bg-emerald-500 text-white w-4 h-4 rounded-full flex items-center justify-center font-black">✓</span>` : ''}
+                        <div class="en-text text-2xl sm:text-3xl font-black leading-none">
+                            <span class="text-slate-400">${info.upper}</span><span>${info.lower}</span>
+                        </div>
+                        <div class="font-hebrew text-xs font-extrabold mt-1.5 px-2 py-0.5 rounded-lg ${state.abcBoardMode === 'name' ? 'bg-indigo-100 text-indigo-900' : 'bg-emerald-100 text-emerald-900'}" dir="rtl">
+                            ${subLabel}
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        window.tapAbcTile = function(btnEl, key) {
+            btnEl.classList.add('animate-pop');
+            setTimeout(() => btnEl.classList.remove('animate-pop'), 350);
+            if (state.abcBoardMode === 'name') {
+                speakLetterName(key);
+            } else {
+                speakPhonics(key, true);
+            }
+        };
+
+        /* ==========================================================================
+           17. PARENT CONTROL & SAFE RESET MODAL
+           ========================================================================== */
+        window.openParentModal = function() {
+            state.pendingResetTarget = null;
+            state.parentRewardProfileId = activeProfileId || 'avigail';
+            document.getElementById('parent-modal').classList.remove('hidden');
+            renderParentModalBody();
+        };
+
+        window.closeParentModal = function() {
+            state.pendingResetTarget = null;
+            document.getElementById('parent-modal').classList.add('hidden');
+        };
+
+        window.setParentRewardProfile = function(pid) {
+            state.parentRewardProfileId = pid;
+            renderParentModalBody();
+        };
+
+        window.requestResetConfirmation = function(target) {
+            state.pendingResetTarget = target;
+            renderParentModalBody();
+        };
+
+        window.cancelResetConfirmation = function() {
+            state.pendingResetTarget = null;
+            renderParentModalBody();
+        };
+
+        window.executeProfileReset = async function(target) {
+            const targets = target === 'both' ? ['avigail', 'rani'] : [target];
+            for (const pid of targets) {
+                profilesCache[pid] = createDefaultProfileData(pid);
+                if (activeProfileId === pid) {
+                    applyProfileToActiveState(pid);
+                    selectLevel(1);
+                }
+                await persistToCloudNow(pid);
+            }
+            state.pendingResetTarget = null;
+            renderProfileCards();
+            renderParentModalBody();
+            playSfx('pop');
+
+            const label = target === 'both' ? 'שני הפרופילים אופסו בהצלחה' : `הפרופיל של ${PROFILE_META[target].name} אופס בהצלחה`;
+            showToast(label, '🔄');
+        };
+
+        window.addParentModalReward = async function() {
+            const pid = state.parentRewardProfileId;
+            const titleEl = document.getElementById('pm-reward-title');
+            const costEl = document.getElementById('pm-reward-cost');
+            const title = titleEl.value.trim();
+            const cost = parseInt(costEl.value, 10);
+            if (!title || isNaN(cost) || cost < 10) {
+                showToast('נא למלא שם פרס ומחיר (לפחות 10 מטבעות)', '⚠️');
+                return;
+            }
+            const newReward = { id: 'pr_' + Date.now(), title, cost };
+            profilesCache[pid].parentRewards.push(newReward);
+            if (activeProfileId === pid) {
+                state.parentRewards.push({ ...newReward });
+            }
+            await persistToCloudNow(pid);
+            playSfx('pop');
+            renderParentModalBody();
+            showToast(`נוסף פרס ל${PROFILE_META[pid].name}! 🎁`, '🎁');
+        };
+
+        window.deleteParentModalReward = async function(rewardId) {
+            const pid = state.parentRewardProfileId;
+            profilesCache[pid].parentRewards = profilesCache[pid].parentRewards.filter(r => r.id !== rewardId);
+            if (activeProfileId === pid) {
+                state.parentRewards = state.parentRewards.filter(r => r.id !== rewardId);
+            }
+            await persistToCloudNow(pid);
+            renderParentModalBody();
+        };
+
+        function renderParentModalBody() {
+            const body = document.getElementById('parent-modal-body');
+            if (!body) return;
+
+            const avData = profilesCache.avigail;
+            const raData = profilesCache.rani;
+            const pid = state.parentRewardProfileId;
+            const targetRewards = profilesCache[pid].parentRewards || [];
+
+            const renderResetButton = (targetKey, label, colorClasses) => {
+                if (state.pendingResetTarget === targetKey) {
+                    return `
+                        <div class="bg-rose-50 border-2 border-rose-300 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-2 animate-pop">
+                            <span class="text-xs font-extrabold text-rose-900">⚠️ בטוחים? כל המטבעות וההתקדמות יימחקו!</span>
+                            <div class="flex gap-2 shrink-0">
+                                <button onclick="executeProfileReset('${targetKey}')" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-black px-3.5 py-2 rounded-xl cursor-pointer">כן, אפס עכשיו</button>
+                                <button onclick="cancelResetConfirmation()" class="bg-white border border-slate-300 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer">ביטול</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                return `
+                    <button onclick="requestResetConfirmation('${targetKey}')" class="w-full ${colorClasses} font-extrabold text-xs sm:text-sm py-3 px-4 rounded-2xl transition cursor-pointer flex items-center justify-between">
+                        <span>${label}</span>
+                        <span>🔄</span>
+                    </button>
+                `;
+            };
+
+            body.innerHTML = `
+                <!-- Section 1: Progress Overview & Safe Reset -->
+                <div class="space-y-3">
+                    <h3 class="font-black text-slate-800 text-base">🔄 איפוס התקדמות (לבדיקה או התחלה מחדש)</h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-3">
+                            <div class="font-black text-indigo-900 text-sm mb-1">👧🏻 אביגיל</div>
+                            <div class="text-slate-600">🪙 ${avData.coins} מטבעות • ${avData.completedLevels.length}/7 שלבים • ${avData.learnedLetters.length} אותיות</div>
+                        </div>
+                        <div class="bg-pink-50/70 border border-pink-200 rounded-2xl p-3">
+                            <div class="font-black text-pink-900 text-sm mb-1">🧚‍♀️ רני</div>
+                            <div class="text-slate-600">🪙 ${raData.coins} מטבעות • ${raData.completedLevels.length}/7 שלבים • ${raData.learnedLetters.length} אותיות</div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 pt-1">
+                        ${renderResetButton('avigail', 'איפוס מלא של אביגיל בלבד', 'bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900')}
+                        ${renderResetButton('rani', 'איפוס מלא של רני בלבד', 'bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-900')}
+                        ${renderResetButton('both', 'איפוס מלא של שתיהן (אביגיל + רני)', 'bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800')}
+                    </div>
+                </div>
+
+                <!-- Section 2: Manage Custom Parent Rewards per Girl -->
+                <div class="pt-5 border-t border-slate-200 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="font-black text-slate-800 text-base">🎁 ניהול פרסים מאבא ואמא</h3>
+                        <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+                            <button onclick="setParentRewardProfile('avigail')" class="px-3 py-1 rounded-lg text-xs font-extrabold cursor-pointer ${pid === 'avigail' ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-500'}">אביגיל</button>
+                            <button onclick="setParentRewardProfile('rani')" class="px-3 py-1 rounded-lg text-xs font-extrabold cursor-pointer ${pid === 'rani' ? 'bg-white text-pink-600 shadow-2xs' : 'text-slate-500'}">רני</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        ${targetRewards.length ? targetRewards.map(r => `
+                            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm">
+                                <span class="font-bold text-slate-800">${r.title} <span class="text-amber-700 text-xs">(${r.cost} 🪙)</span></span>
+                                <button onclick="deleteParentModalReward('${r.id}')" class="text-rose-600 hover:bg-rose-100 px-2 py-1 rounded-lg text-xs font-bold cursor-pointer">מחק 🗑️</button>
+                            </div>
+                        `).join('') : `<div class="text-xs text-slate-400 text-center py-2">אין פרסים מוגדרים עדיין</div>`}
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input id="pm-reward-title" type="text" placeholder="פרס חדש ל${PROFILE_META[pid].name} (למשל: גלידה 🍦)" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-indigo-500" />
+                        <input id="pm-reward-cost" type="number" min="10" step="10" placeholder="מטבעות" class="w-full sm:w-28 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold focus:outline-none focus:border-indigo-500" />
+                        <button onclick="addParentModalReward()" class="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-sm px-5 py-2.5 rounded-xl cursor-pointer">הוסף</button>
+                    </div>
+                </div>
+
+                <!-- Section 3: Cloud Sync Diagnostics -->
+                <div class="pt-4 border-t border-slate-200 text-xs flex items-center justify-between text-slate-500">
+                    <span>סטטוס שמירה בענן:</span>
+                    <span class="font-bold ${db && currentUser && !cloudErrorMsg ? 'text-emerald-700' : 'text-rose-600'}">
+                        ${db && currentUser && !cloudErrorMsg ? 'מחובר ומסונכרן ☁️✓' : `בעיה בחיבור (${cloudErrorMsg || 'לא מחובר'})`}
+                    </span>
+                </div>
+            `;
+        }
+
+        /* ==========================================================================
+           18. APP BOOTSTRAP
+           ========================================================================== */
+        function bootstrapApp() {
+            loadLocalBackups();
+            initVoices();
+            renderProfileCards();
+            initCloudStorage();
+        }
+
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', bootstrapApp);
+        } else {
+            bootstrapApp();
+        }
+
+        // Flush any pending save immediately if user refreshes or switches tabs
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && activeProfileId && cloudReady) {
+                clearTimeout(saveTimeout);
+                persistToCloudNow(activeProfileId);
+            }
+        });
+    </script>
+</body>
+</html>

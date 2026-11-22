@@ -1,0 +1,5 @@
+# Local development only: exposes Postgres on 127.0.0.1:5433 for `npm run dev`.
+services:
+  db:
+    ports:
+      - "127.0.0.1:5433:5432"
