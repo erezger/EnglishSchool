@@ -21,6 +21,12 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-english}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-english}
+      # First admin account — only used if no admin exists yet (see README)
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_DISPLAY_NAME: ${ADMIN_DISPLAY_NAME:-}
+      FAMILY_NAME: ${FAMILY_NAME:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
     ports:
       - "127.0.0.1:${APP_PORT:-3000}:3000"
     depends_on:

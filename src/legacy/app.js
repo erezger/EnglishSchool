@@ -227,49 +227,35 @@ const SHOP_THEMES = [
     { id: 'theme-neon', name: 'ניאון זוהר', icon: '⚡', cost: 100, preview: 'from-fuchsia-600 to-emerald-500' }
 ];
 
-const DEFAULT_PARENT_REWARDS = [
-    { id: 'pr_1', title: 'גלידה טעימה 🍦', cost: 100 },
-    { id: 'pr_2', title: 'בחירת סרט משפחתי 🎬', cost: 250 },
-    { id: 'pr_3', title: '20 ₪ אמיתיים לקופה 💵', cost: 500 }
-];
-
 /* ==========================================================================
-   4. TWO PROFILES (AVIGAIL & RANI) + SERVER PERSISTENCE (NEXT.JS API + POSTGRES)
+   4. LOGGED-IN STUDENT + SERVER PERSISTENCE (NEXT.JS API + POSTGRES)
+   The page is only rendered for a logged-in student; the server passes the
+   user and their progress in window.__EC_BOOT__ (see LegacyApp.tsx).
    ========================================================================== */
-const API_BASE = '/api/profiles';
+const BOOT = (typeof window !== 'undefined' && window.__EC_BOOT__) || {};
+const CURRENT_USER = BOOT.user || { id: 'anonymous', username: '', displayName: '' };
+const API_PROGRESS = '/api/me/progress';
+const API_REWARDS = '/api/me/rewards';
+const API_REDEEM = '/api/me/redemptions';
 const POLL_INTERVAL_MS = 5000;
-const RETRY_INIT_MS = 10000;
 const REQUEST_TIMEOUT_MS = 10000;
 const SAVE_RETRY_MS = 5000;
-const appId = 'english-phonics-pro'; // localStorage backup namespace
 const clientSessionId = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 let cloudErrorMsg = '';
 
-const PROFILE_META = {
-    avigail: {
-        id: 'avigail',
-        name: 'אביגיל',
-        defaultAvatar: 'av_girl',
-        defaultPet: 'pet_dog',
-        defaultTheme: 'theme-classic',
-        gradient: 'from-indigo-500 to-purple-600',
-        border: 'border-indigo-200 hover:border-indigo-400'
-    },
-    rani: {
-        id: 'rani',
-        name: 'רני',
-        defaultAvatar: 'av_fairy',
-        defaultPet: 'pet_cat',
-        defaultTheme: 'theme-unicorn',
-        gradient: 'from-pink-500 to-purple-500',
-        border: 'border-pink-200 hover:border-pink-400'
-    }
-};
+/** Escape any text that came from users (names, reward titles) before putting it in innerHTML. */
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
-function createDefaultProfileData(profileId) {
-    const meta = PROFILE_META[profileId] || PROFILE_META.avigail;
+function createDefaultProfileData() {
     return {
         coins: 0,
         dailyStreak: 1,
@@ -283,176 +269,65 @@ function createDefaultProfileData(profileId) {
         slowSpeech: false,
         sfxMuted: false,
         preferredVoiceName: '',
-        ownedItems: Array.from(new Set(['av_girl', 'pet_dog', 'theme-classic', meta.defaultAvatar, meta.defaultPet, meta.defaultTheme])),
-        equippedAvatar: meta.defaultAvatar,
-        equippedPet: meta.defaultPet,
-        equippedTheme: meta.defaultTheme,
-        parentRewards: DEFAULT_PARENT_REWARDS.map(r => ({ ...r })),
-        redemptionHistory: []
+        ownedItems: ['av_girl', 'pet_dog', 'theme-classic'],
+        equippedAvatar: 'av_girl',
+        equippedPet: 'pet_dog',
+        equippedTheme: 'theme-classic'
     };
 }
 
-const profilesCache = {
-    avigail: createDefaultProfileData('avigail'),
-    rani: createDefaultProfileData('rani')
-};
-
-let activeProfileId = null; // 'avigail' or 'rani'
 let state = {
-    ...createDefaultProfileData('avigail'),
+    ...createDefaultProfileData(),
     currentLevelId: 1,
     currentTab: 'learn',
     blenderWordIndex: 0,
     blenderRevealMeaning: false,
     shopTab: 'app',
     abcBoardMode: 'name',
-    parentRewardProfileId: 'avigail',
-    pendingResetTarget: null
+    // Server-managed (parents define rewards; redemptions wait for a parent to mark them done)
+    parentRewards: [],
+    redemptions: [],
+    rewardsLoaded: false
 };
 
-let cloudReady = false;      // initial server load finished (successfully or not)
-let cloudConnected = false;  // server reachable; saves go straight to Postgres
+let cloudReady = false;       // initial load finished
+let cloudConnected = false;   // server reachable; saves go straight to Postgres
 let lastLocalWriteId = 0;
+let serverVersion = 0;        // version of the server copy our state is based on
+let inflightSave = null;
+let rerunSave = false;
+let hasUnsavedChanges = false;
+let dirtyWhileOffline = false;
+let retryTimer = null;
 let pollTimer = null;
-const serverVersions = { avigail: 0, rani: 0 };
-const inflightSaves = { avigail: null, rani: null };
-const rerunSave = { avigail: false, rani: false };
-const dirtyWhileOffline = { avigail: false, rani: false };
-const retryTimers = { avigail: null, rani: null };
 
-function getLocalBackupKey(profileId) {
-    return `english_phonics_pro_${appId}_${profileId}`;
+/* ---------- local backup (per user, survives a flaky connection / refresh) ---------- */
+function getLocalBackupKey() {
+    return `english_click_pro_progress_${CURRENT_USER.id}`;
 }
 
-function saveLocalBackup(profileId, data) {
+function saveLocalBackup() {
     try {
-        localStorage.setItem(getLocalBackupKey(profileId), JSON.stringify(data));
+        localStorage.setItem(getLocalBackupKey(), JSON.stringify({
+            data: extractPersistableState(),
+            version: serverVersion,
+            dirty: hasUnsavedChanges || dirtyWhileOffline
+        }));
     } catch (err) {
-        // Ignore storage quota or iframe restrictions
+        // Ignore storage quota / private mode
     }
 }
 
-function loadLocalBackups() {
-    ['avigail', 'rani'].forEach((pid) => {
-        try {
-            const raw = localStorage.getItem(getLocalBackupKey(pid));
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                profilesCache[pid] = sanitizeLoadedProfile(pid, parsed);
-            }
-        } catch (err) {
-            // Ignore malformed or blocked localStorage
-        }
-    });
-}
-
-function renderProfileCards() {
-    const grid = document.getElementById('profile-cards-grid');
-    if (!grid) return;
-
-    grid.innerHTML = ['avigail', 'rani'].map((pid) => {
-        const meta = PROFILE_META[pid];
-        const data = profilesCache[pid] || createDefaultProfileData(pid);
-        const av = SHOP_AVATARS.find(a => a.id === data.equippedAvatar) || SHOP_AVATARS[0];
-        const pet = SHOP_PETS.find(p => p.id === data.equippedPet) || SHOP_PETS[0];
-        const singleLetters = (data.learnedLetters || []).filter(l => l.length === 1).length;
-
-        return `
-            <button onclick="selectProfile('${pid}')" class="group bg-white/95 hover:bg-white border-2 ${meta.border} rounded-3xl p-6 text-right shadow-md hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1 active:scale-98 cursor-pointer flex flex-col justify-between">
-                <div class="flex items-center gap-4 mb-5">
-                    <div class="relative w-20 h-20 rounded-3xl bg-gradient-to-br ${meta.gradient} text-white flex items-center justify-center text-4xl shadow-md group-hover:scale-105 transition shrink-0">
-                        <span>${av.emoji}</span>
-                        <span class="absolute -bottom-1.5 -left-1.5 bg-white rounded-full w-8 h-8 flex items-center justify-center text-lg shadow border border-slate-200">${pet.emoji}</span>
-                    </div>
-                    <div>
-                        <div class="text-2xl sm:text-3xl font-black text-slate-800">${meta.name}</div>
-                        <div class="inline-flex items-center gap-1.5 mt-1 bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1 rounded-full text-xs sm:text-sm font-black">
-                            <span>🪙</span>
-                            <span>${data.coins || 0} מטבעות</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-2 text-center bg-slate-50 rounded-2xl p-3 border border-slate-100 mb-4">
-                    <div>
-                        <div class="text-xs text-slate-500 font-bold">שלבים</div>
-                        <div class="text-sm sm:text-base font-black text-indigo-700">${(data.completedLevels || []).length} / 7</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-slate-500 font-bold">אותיות</div>
-                        <div class="text-sm sm:text-base font-black text-emerald-700">${singleLetters} / 26</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-slate-500 font-bold">רצף</div>
-                        <div class="text-sm sm:text-base font-black text-orange-600">🔥 ${data.dailyStreak || 1}</div>
-                    </div>
-                </div>
-
-                <div class="w-full py-3 rounded-2xl bg-gradient-to-l ${meta.gradient} text-white font-extrabold text-center text-sm sm:text-base shadow-sm">
-                    בואי נתחיל ללמוד! 🚀
-                </div>
-            </button>
-        `;
-    }).join('');
-}
-
-function applyProfileToActiveState(profileId) {
-    const data = sanitizeLoadedProfile(profileId, profilesCache[profileId]);
-    const today = new Date().toISOString().slice(0, 10);
-
-    if (data.lastActiveDate && data.lastActiveDate !== today) {
-        const prev = new Date(data.lastActiveDate + 'T00:00:00');
-        const curr = new Date(today + 'T00:00:00');
-        const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
-        if (diffDays === 1) {
-            data.dailyStreak = (data.dailyStreak || 1) + 1;
-        } else if (diffDays > 1) {
-            data.dailyStreak = 1;
-        }
-        data.lastActiveDate = today;
-        profilesCache[profileId] = data;
+function loadLocalBackup() {
+    try {
+        const raw = localStorage.getItem(getLocalBackupKey());
+        return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+        return null;
     }
-
-    Object.assign(state, {
-        ...data,
-        completedLevels: [...data.completedLevels],
-        learnedLetters: [...data.learnedLetters],
-        readWords: [...data.readWords],
-        readSentences: [...data.readSentences],
-        mistakes: [...data.mistakes],
-        ownedItems: [...data.ownedItems],
-        parentRewards: data.parentRewards.map(r => ({ ...r })),
-        redemptionHistory: data.redemptionHistory.map(h => ({ ...h }))
-    });
-
-    initVoices();
-    applyTheme();
-    updateHeaderUI();
-    renderLevelSelector();
-    renderLevelHeader();
-    renderCurrentView();
 }
 
-window.selectProfile = function(profileId) {
-    if (!PROFILE_META[profileId]) return;
-    activeProfileId = profileId;
-    document.getElementById('profile-screen').classList.add('hidden');
-    document.getElementById('app-wrapper').classList.remove('hidden');
-    applyProfileToActiveState(profileId);
-    selectLevel(state.currentLevelId || 1);
-    playSfx('pop');
-    showToast(`ברוכה הבאה, ${PROFILE_META[profileId].name}! 🌟`, '👋');
-};
-
-window.openProfileScreen = function() {
-    if (activeProfileId) {
-        persistToCloudNow(activeProfileId);
-    }
-    document.getElementById('app-wrapper').classList.add('hidden');
-    document.getElementById('profile-screen').classList.remove('hidden');
-    renderProfileCards();
-};
-
+/* ---------- state <-> stored data ---------- */
 function extractPersistableState() {
     lastLocalWriteId = Date.now();
     return {
@@ -472,24 +347,14 @@ function extractPersistableState() {
         equippedAvatar: state.equippedAvatar || 'av_girl',
         equippedPet: state.equippedPet || 'pet_dog',
         equippedTheme: state.equippedTheme || 'theme-classic',
-        parentRewards: (state.parentRewards || []).map(r => ({
-            id: String(r.id || 'pr_' + Date.now()),
-            title: String(r.title || ''),
-            cost: Number(r.cost) || 10
-        })),
-        redemptionHistory: (state.redemptionHistory || []).map(h => ({
-            title: String(h.title || ''),
-            cost: Number(h.cost) || 0,
-            date: String(h.date || '')
-        })),
         updatedAt: new Date().toISOString(),
         writeId: lastLocalWriteId,
         editorId: clientSessionId
     };
 }
 
-function sanitizeLoadedProfile(profileId, data) {
-    const base = createDefaultProfileData(profileId);
+function sanitizeLoadedProfile(data) {
+    const base = createDefaultProfileData();
     if (!data) return base;
     return {
         ...base,
@@ -508,46 +373,72 @@ function sanitizeLoadedProfile(profileId, data) {
         ownedItems: Array.isArray(data.ownedItems) && data.ownedItems.length ? data.ownedItems : base.ownedItems,
         equippedAvatar: data.equippedAvatar || base.equippedAvatar,
         equippedPet: data.equippedPet || base.equippedPet,
-        equippedTheme: data.equippedTheme || base.equippedTheme,
-        parentRewards: Array.isArray(data.parentRewards) ? data.parentRewards : base.parentRewards,
-        redemptionHistory: Array.isArray(data.redemptionHistory) ? data.redemptionHistory : [],
-        writeId: data.writeId || 0
+        equippedTheme: data.equippedTheme || base.equippedTheme
     };
 }
 
-function mergeRemoteProfileIntoActiveState(profileId, remoteData) {
-    if (activeProfileId !== profileId) return;
-
+function assignProgressToState(data) {
     Object.assign(state, {
-        ...remoteData,
-        completedLevels: [...remoteData.completedLevels],
-        learnedLetters: [...remoteData.learnedLetters],
-        readWords: [...remoteData.readWords],
-        readSentences: [...remoteData.readSentences],
-        mistakes: [...remoteData.mistakes],
-        ownedItems: [...remoteData.ownedItems],
-        parentRewards: remoteData.parentRewards.map(r => ({ ...r })),
-        redemptionHistory: remoteData.redemptionHistory.map(h => ({ ...h }))
+        ...data,
+        completedLevels: [...data.completedLevels],
+        learnedLetters: [...data.learnedLetters],
+        readWords: [...data.readWords],
+        readSentences: [...data.readSentences],
+        mistakes: [...data.mistakes],
+        ownedItems: [...data.ownedItems]
     });
+}
+
+/** First load: apply data, update the daily streak, render everything. Returns true if the streak date changed. */
+function applyProfileToActiveState(rawData) {
+    const data = sanitizeLoadedProfile(rawData);
+    const today = new Date().toISOString().slice(0, 10);
+    let changed = false;
+
+    if (data.lastActiveDate && data.lastActiveDate !== today) {
+        const prev = new Date(data.lastActiveDate + 'T00:00:00');
+        const curr = new Date(today + 'T00:00:00');
+        const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+            data.dailyStreak = (data.dailyStreak || 1) + 1;
+        } else if (diffDays > 1) {
+            data.dailyStreak = 1;
+        }
+        data.lastActiveDate = today;
+        changed = true;
+    }
+
+    assignProgressToState(data);
+    initVoices();
     applyTheme();
     updateHeaderUI();
     renderLevelSelector();
     renderLevelHeader();
+    renderCurrentView();
+    return changed;
 }
 
-/* --------------------------------------------------------------------------
-   Server sync (Next.js API + Postgres) — replaces the Gemini/Firebase layer.
-   - GET  /api/profiles        -> both profiles with a server version number
-   - PUT  /api/profiles/:id    -> save one profile, returns the new version
-   - Light polling keeps devices in sync (replaces Firestore onSnapshot).
-   -------------------------------------------------------------------------- */
-// fetch() with a hard timeout, so a dropped connection becomes an error we can retry
-// instead of a request that hangs forever.
+/** Server copy wins (another device, or a parent reset). */
+function adoptServerProgress(progress, { notify = false } = {}) {
+    serverVersion = Number(progress.version) || serverVersion;
+    assignProgressToState(sanitizeLoadedProfile(progress.data));
+    hasUnsavedChanges = false;
+    dirtyWhileOffline = false;
+    applyTheme();
+    updateHeaderUI();
+    renderLevelSelector();
+    renderLevelHeader();
+    if (state.currentTab === 'learn') renderCurrentView();
+    saveLocalBackup();
+    if (notify) showToast('ההתקדמות עודכנה מהשרת', '🔄');
+}
+
+/* ---------- networking ---------- */
 async function fetchWithTimeout(url, options = {}) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-        return await fetch(url, { ...options, signal: controller.signal });
+        return await fetch(url, { cache: 'no-store', ...options, signal: controller.signal });
     } catch (err) {
         if (err?.name === 'AbortError') throw new Error('השרת לא הגיב בזמן');
         throw err;
@@ -556,11 +447,12 @@ async function fetchWithTimeout(url, options = {}) {
     }
 }
 
-async function fetchAllProfiles() {
-    const res = await fetchWithTimeout(API_BASE, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
-    const json = await res.json();
-    return Array.isArray(json.profiles) ? json.profiles : [];
+let redirectingToLogin = false;
+function handleLoggedOut() {
+    if (redirectingToLogin) return;
+    redirectingToLogin = true;
+    saveLocalBackup();
+    window.location.href = '/login?expired=1';
 }
 
 function setSaveBadge(kind) {
@@ -578,80 +470,108 @@ function setSaveBadge(kind) {
     badge.className = `text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${colors}`;
 }
 
-function setProfileStatus(text) {
-    const statusEl = document.getElementById('profile-cloud-status');
-    if (statusEl) statusEl.textContent = text;
-}
-
-// Sends the latest cached copy of a profile. Concurrent calls are coalesced:
-// if a save is already in flight, one more PUT runs right after it finishes.
-function pushProfile(profileId, { keepalive = false } = {}) {
-    if (inflightSaves[profileId]) {
-        rerunSave[profileId] = true;
-        return inflightSaves[profileId];
+/**
+ * Sends the current state. Concurrent calls are coalesced (one more PUT runs after the
+ * in-flight one). The server rejects stale writes (409) and returns its copy, which we adopt.
+ */
+function pushProgress({ keepalive = false } = {}) {
+    if (inflightSave) {
+        rerunSave = true;
+        return inflightSave;
     }
-    inflightSaves[profileId] = (async () => {
+    inflightSave = (async () => {
         try {
             do {
-                rerunSave[profileId] = false;
-                const res = await fetchWithTimeout(`${API_BASE}/${profileId}`, {
+                rerunSave = false;
+                hasUnsavedChanges = false;
+                const res = await fetchWithTimeout(API_PROGRESS, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: profilesCache[profileId] }),
+                    body: JSON.stringify({ data: extractPersistableState(), baseVersion: serverVersion }),
                     keepalive
                 });
+                if (res.status === 401) return handleLoggedOut();
+                if (res.status === 409) {
+                    const json = await res.json();
+                    adoptServerProgress(json.current, { notify: true });
+                    continue;
+                }
                 if (!res.ok) throw new Error(`שגיאת שמירה (${res.status})`);
                 const json = await res.json();
-                serverVersions[profileId] = Number(json.version) || serverVersions[profileId];
-            } while (rerunSave[profileId]);
-            dirtyWhileOffline[profileId] = false;
+                serverVersion = Number(json.version) || serverVersion;
+            } while (rerunSave);
+            dirtyWhileOffline = false;
+            cloudConnected = true;
             cloudErrorMsg = '';
+            saveLocalBackup();
             setSaveBadge('saved');
         } catch (err) {
             console.warn('Error saving progress:', err);
-            dirtyWhileOffline[profileId] = true;
+            hasUnsavedChanges = true;
+            dirtyWhileOffline = true;
             cloudErrorMsg = err?.message || 'שגיאת שמירה בשרת';
+            saveLocalBackup();
             setSaveBadge('error');
-            scheduleSaveRetry(profileId);
+            scheduleSaveRetry();
         } finally {
-            inflightSaves[profileId] = null;
+            inflightSave = null;
         }
     })();
-    return inflightSaves[profileId];
+    return inflightSave;
 }
 
-// After a failed save, keep retrying in the background until it lands.
-function scheduleSaveRetry(profileId) {
-    if (retryTimers[profileId]) return;
-    retryTimers[profileId] = setTimeout(() => {
-        retryTimers[profileId] = null;
-        if (dirtyWhileOffline[profileId] && cloudConnected) {
+function scheduleSaveRetry() {
+    if (retryTimer) return;
+    retryTimer = setTimeout(() => {
+        retryTimer = null;
+        if (dirtyWhileOffline) {
             setSaveBadge('saving');
-            pushProfile(profileId);
+            pushProgress();
         }
     }, SAVE_RETRY_MS);
 }
 
+/** Wait for any pending save to land (used before redeeming / leaving). */
+async function flushSaves() {
+    while (inflightSave) {
+        await inflightSave;
+    }
+}
+
+function scheduleSave() {
+    hasUnsavedChanges = true;
+    saveLocalBackup();
+    if (!cloudConnected) {
+        dirtyWhileOffline = true;
+        setSaveBadge('local');
+        scheduleSaveRetry();
+        return;
+    }
+    setSaveBadge('saving');
+    pushProgress();
+}
+
+// Kept for older call sites in this file.
+function persistToCloudNow() {
+    scheduleSave();
+    return inflightSave || Promise.resolve();
+}
+
 async function pollServerOnce() {
-    if (!cloudConnected || document.visibilityState !== 'visible') return;
+    if (!cloudReady || redirectingToLogin || document.visibilityState !== 'visible') return;
     try {
-        const profiles = await fetchAllProfiles();
-        for (const remote of profiles) {
-            const pid = remote.id;
-            if (!PROFILE_META[pid] || !remote.data) continue;
-            const version = Number(remote.version) || 0;
-            // Skip if nothing new, or if we have local changes still on their way up
-            if (version <= serverVersions[pid] || inflightSaves[pid] || dirtyWhileOffline[pid]) continue;
-            serverVersions[pid] = version;
-            const isOwnEcho = remote.data.editorId === clientSessionId;
-            const sanitized = sanitizeLoadedProfile(pid, remote.data);
-            profilesCache[pid] = sanitized;
-            saveLocalBackup(pid, sanitized);
-            if (!isOwnEcho) {
-                renderProfileCards();
-                mergeRemoteProfileIntoActiveState(pid, sanitized);
-            }
+        const res = await fetchWithTimeout(API_PROGRESS);
+        if (res.status === 401) return handleLoggedOut();
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const progress = await res.json();
+        cloudConnected = true;
+        const version = Number(progress.version) || 0;
+        if (version > serverVersion && !inflightSave && !dirtyWhileOffline && !hasUnsavedChanges) {
+            const isOwnEcho = progress.data && progress.data.editorId === clientSessionId;
+            if (isOwnEcho) serverVersion = version;
+            else adoptServerProgress(progress);
         }
+        if (dirtyWhileOffline && !inflightSave) pushProgress();
         if (cloudErrorMsg) {
             cloudErrorMsg = '';
             setSaveBadge('saved');
@@ -668,51 +588,60 @@ function startPolling() {
     window.addEventListener('focus', pollServerOnce);
 }
 
-async function initCloudStorage() {
-    setProfileStatus('• טוען נתונים מהשרת...');
+/* ---------- rewards from parents ---------- */
+async function loadRewards() {
     try {
-        const profiles = await fetchAllProfiles();
-        cloudConnected = true;
-
-        for (const pid of Object.keys(PROFILE_META)) {
-            const remote = profiles.find(p => p.id === pid);
-            if (remote && remote.data && !dirtyWhileOffline[pid]) {
-                // Server is the source of truth
-                serverVersions[pid] = Number(remote.version) || 0;
-                profilesCache[pid] = sanitizeLoadedProfile(pid, remote.data);
-                saveLocalBackup(pid, profilesCache[pid]);
-            } else {
-                // First run (empty DB) or offline edits made on this device: upload ours
-                if (remote) serverVersions[pid] = Number(remote.version) || 0;
-                if (pid === activeProfileId) {
-                    profilesCache[pid] = extractPersistableState();
-                } else {
-                    profilesCache[pid] = { ...profilesCache[pid], updatedAt: new Date().toISOString(), writeId: Date.now(), editorId: clientSessionId };
-                }
-                await pushProfile(pid);
-            }
-        }
-
-        cloudReady = true;
-        cloudErrorMsg = '';
-        setProfileStatus('• מסונכרן בשרת לכל המכשירים ☁️✓');
-        renderProfileCards();
-
-        if (activeProfileId && !dirtyWhileOffline[activeProfileId]) {
-            applyProfileToActiveState(activeProfileId);
-        }
-        startPolling();
+        const res = await fetchWithTimeout(API_REWARDS);
+        if (res.status === 401) return handleLoggedOut();
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const json = await res.json();
+        state.parentRewards = Array.isArray(json.rewards) ? json.rewards : [];
+        state.redemptions = Array.isArray(json.redemptions) ? json.redemptions : [];
+        state.rewardsLoaded = true;
     } catch (err) {
-        console.warn('Server sync initialization failed:', err);
-        cloudConnected = false;
-        cloudReady = true;
-        cloudErrorMsg = err?.message || 'שגיאת חיבור לשרת';
-        setProfileStatus('• אין חיבור לשרת — שומר מקומית, מנסה שוב... ⚠️');
-        renderProfileCards();
-        setSaveBadge('offline');
-        setTimeout(initCloudStorage, RETRY_INIT_MS);
+        console.warn('Could not load rewards:', err);
+        showToast('לא הצלחנו לטעון את הפרסים, נסי שוב', '⚠️');
+    }
+    if (state.shopTab === 'parent' && !document.getElementById('shop-modal').classList.contains('hidden')) {
+        renderShopContent();
     }
 }
+
+/* ---------- start ---------- */
+function initCloudStorage() {
+    const boot = BOOT.progress;
+    const backup = loadLocalBackup();
+    serverVersion = Number(boot?.version) || 0;
+    cloudConnected = !!boot;
+
+    // Offline edits from this device that never reached the server, based on the same version
+    const useBackup = backup && backup.dirty && backup.data && Number(backup.version) === serverVersion;
+    const changed = applyProfileToActiveState(useBackup ? backup.data : boot?.data);
+
+    cloudReady = true;
+    if (useBackup || changed) scheduleSave();
+    else setSaveBadge(cloudConnected ? 'saved' : 'offline');
+    startPolling();
+}
+
+async function switchUser() {
+    try {
+        if (hasUnsavedChanges || dirtyWhileOffline) await Promise.race([pushProgress(), new Promise(r => setTimeout(r, 3000))]);
+        await flushSaves();
+        await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+        // Even if logout fails, go to the login screen
+    }
+    window.location.href = '/login';
+}
+window.switchUser = switchUser;
+
+window.goToParentArea = async function() {
+    try {
+        await flushSaves();
+    } catch (err) {}
+    window.location.href = '/login?next=/parent&mode=parent';
+};
 
 /* ==========================================================================
    5. CRYSTAL-CLEAR ENGLISH SPEECH ENGINE (VOICES, WORDS, ABC NAMES & PHONICS)
@@ -954,31 +883,6 @@ function markWordAsRead(word, withCoinReward = false) {
     }
 }
 
-function scheduleSave() {
-    if (!activeProfileId) return;
-    // Save immediately so an instant refresh never loses progress
-    persistToCloudNow(activeProfileId);
-}
-
-async function persistToCloudNow(profileId = activeProfileId, options = {}) {
-    if (!profileId) return;
-    const dataToSave = profileId === activeProfileId
-        ? extractPersistableState()
-        : { ...profilesCache[profileId], updatedAt: new Date().toISOString(), writeId: Date.now(), editorId: clientSessionId };
-    profilesCache[profileId] = dataToSave;
-    saveLocalBackup(profileId, dataToSave);
-
-    if (!cloudConnected) {
-        // Kept in localStorage; uploaded automatically once the server is reachable
-        dirtyWhileOffline[profileId] = true;
-        setSaveBadge('local');
-        return;
-    }
-
-    setSaveBadge('saving');
-    await pushProfile(profileId, options);
-}
-
 function recordMistake(word) {
     if (!word) return;
     const normalized = String(word).toLowerCase();
@@ -1061,8 +965,8 @@ function applyTheme() {
 
 function updateHeaderUI() {
     const nameEl = document.getElementById('header-profile-name');
-    if (nameEl && activeProfileId && PROFILE_META[activeProfileId]) {
-        nameEl.textContent = PROFILE_META[activeProfileId].name;
+    if (nameEl) {
+        nameEl.textContent = CURRENT_USER.displayName;
     }
 
     document.getElementById('stat-coins').textContent = state.coins;
@@ -2236,6 +2140,7 @@ window.openShopModal = function(tab = 'app') {
     state.shopTab = tab;
     document.getElementById('shop-modal').classList.remove('hidden');
     renderShopContent();
+    if (tab === 'parent') loadRewards();
 };
 
 window.closeShopModal = function() {
@@ -2245,6 +2150,7 @@ window.closeShopModal = function() {
 window.switchShopTab = function(tab) {
     state.shopTab = tab;
     renderShopContent();
+    if (tab === 'parent') loadRewards();
 };
 
 function renderShopContent() {
@@ -2286,58 +2192,71 @@ function renderShopContent() {
             </div>
         `;
     } else {
+        if (!state.rewardsLoaded) {
+            body.innerHTML = `<div class="text-center text-slate-500 font-bold py-10">טוען את הפרסים... ⏳</div>`;
+            return;
+        }
+        const pending = state.redemptions.filter(r => r.status === 'pending');
+        const history = state.redemptions.filter(r => r.status !== 'pending').slice(0, 8);
+        const formatDate = (iso) => {
+            try { return new Date(iso).toLocaleDateString('he-IL'); } catch (e) { return ''; }
+        };
         body.innerHTML = `
             <div class="space-y-5">
                 <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs sm:text-sm text-amber-950">
-                    <strong>🎁 איך זה עובד?</strong> אבא או אמא מגדירים כאן פרסים אמיתיים! כשצברת מספיק מטבעות, לחצי על <strong>"מימשתי פרס!"</strong> והראי להורים.
+                    <strong>🎁 איך זה עובד?</strong> ההורים מגדירים כאן פרסים אמיתיים! כשצברת מספיק מטבעות, לחצי על <strong>"מימשתי פרס!"</strong> – הפרס יחכה כאן עד שההורים יסמנו שקיבלת אותו.
                 </div>
+
+                ${pending.length ? `
+                    <div class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-4">
+                        <h4 class="font-extrabold text-sm text-sky-900 mb-2">⏳ מחכה להורים</h4>
+                        <div class="space-y-1.5">
+                            ${pending.map(p => `
+                                <div class="flex justify-between items-center text-xs sm:text-sm bg-white border border-sky-200 rounded-xl px-3.5 py-2 text-sky-950 font-bold">
+                                    <span>🎁 ${escapeHtml(p.title)} (${Number(p.cost)} 🪙)</span>
+                                    <span class="text-sky-700 font-medium">${formatDate(p.requestedAt)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
 
                 <!-- Parent Rewards List -->
                 <div class="space-y-3">
-                    ${state.parentRewards.map(r => {
-                        const canAfford = state.coins >= r.cost;
-                        const pct = Math.min(100, Math.round((state.coins / r.cost) * 100));
+                    ${state.parentRewards.length ? state.parentRewards.map(r => {
+                        const cost = Number(r.cost) || 1;
+                        const canAfford = state.coins >= cost;
+                        const pct = Math.min(100, Math.round((state.coins / cost) * 100));
                         return `
                             <div class="bg-white border-2 ${canAfford ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'} rounded-2xl p-4">
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div class="flex-1">
-                                        <div class="font-extrabold text-slate-800 text-base">${r.title}</div>
-                                        <div class="text-xs font-bold text-amber-700 mt-0.5">מחיר: ${r.cost} 🪙 (התקדמות: ${pct}%)</div>
+                                        <div class="font-extrabold text-slate-800 text-base">${escapeHtml(r.title)}</div>
+                                        <div class="text-xs font-bold text-amber-700 mt-0.5">מחיר: ${cost} 🪙 (התקדמות: ${pct}%)</div>
                                         <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-2">
                                             <div class="h-full ${canAfford ? 'bg-emerald-500' : 'bg-amber-400'} rounded-full" style="width: ${pct}%"></div>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
-                                        <button onclick="redeemParentReward('${r.id}')" ${!canAfford ? 'disabled' : ''} class="px-4 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition ${canAfford ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
-                                            ${canAfford ? '🎉 מימשתי פרס!' : `חסרים ${r.cost - state.coins} 🪙`}
+                                        <button onclick="redeemParentReward('${escapeHtml(r.id)}')" ${!canAfford ? 'disabled' : ''} class="px-4 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition ${canAfford ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">
+                                            ${canAfford ? '🎉 מימשתי פרס!' : `חסרים ${cost - state.coins} 🪙`}
                                         </button>
-                                        <button onclick="deleteParentReward('${r.id}')" class="w-9 h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs cursor-pointer" title="מחק פרס">🗑️</button>
                                     </div>
                                 </div>
                             </div>
                         `;
-                    }).join('')}
-                </div>
-
-                <!-- Add New Custom Reward Form -->
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                    <h4 class="font-extrabold text-sm text-slate-700 mb-3">➕ הוספת פרס חדש מאבא/אמא</h4>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <input id="new-reward-title" type="text" placeholder="למשל: פיצה משפחתית 🍕" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:outline-none focus:border-indigo-500" />
-                        <input id="new-reward-cost" type="number" min="10" step="10" placeholder="מחיר במטבעות" class="w-full sm:w-36 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold focus:outline-none focus:border-indigo-500" />
-                        <button onclick="addParentReward()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm px-5 py-2.5 rounded-xl cursor-pointer transition">הוסף</button>
-                    </div>
+                    }).join('') : `<div class="text-center text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded-2xl p-6">עוד אין פרסים. בקשי מההורים להוסיף פרסים באזור ההורים 🎁</div>`}
                 </div>
 
                 <!-- Redemption History -->
-                ${state.redemptionHistory.length ? `
+                ${history.length ? `
                     <div>
-                        <h4 class="font-extrabold text-sm text-slate-700 mb-2">📜 היסטוריית פרסים שמומשו</h4>
+                        <h4 class="font-extrabold text-sm text-slate-700 mb-2">📜 היסטוריית פרסים</h4>
                         <div class="space-y-1.5">
-                            ${state.redemptionHistory.slice(0, 6).map(h => `
-                                <div class="flex justify-between items-center text-xs bg-emerald-50/70 border border-emerald-200 rounded-xl px-3.5 py-2 text-emerald-900 font-medium">
-                                    <span>🎉 ${h.title} (${h.cost} 🪙)</span>
-                                    <span class="text-emerald-700">${h.date}</span>
+                            ${history.map(h => `
+                                <div class="flex justify-between items-center text-xs ${h.status === 'fulfilled' ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-600'} border rounded-xl px-3.5 py-2 font-medium">
+                                    <span>${h.status === 'fulfilled' ? '🎉' : '↩️'} ${escapeHtml(h.title)} (${Number(h.cost)} 🪙)${h.status === 'cancelled' ? ' – בוטל, המטבעות הוחזרו' : ''}</span>
+                                    <span>${formatDate(h.resolvedAt || h.requestedAt)}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -2406,42 +2325,42 @@ window.equipShopItem = function(id, category, withFeedback = true) {
     scheduleSave();
 };
 
-window.addParentReward = function() {
-    const titleInput = document.getElementById('new-reward-title');
-    const costInput = document.getElementById('new-reward-cost');
-    const title = titleInput.value.trim();
-    const cost = parseInt(costInput.value, 10);
-    if (!title || isNaN(cost) || cost < 10) {
-        showToast('נא למלא שם פרס ומחיר (לפחות 10 מטבעות)', '⚠️');
+let redeemInProgress = false;
+window.redeemParentReward = async function(id) {
+    const reward = state.parentRewards.find(r => r.id === id);
+    if (!reward || state.coins < reward.cost || redeemInProgress) return;
+    if (dirtyWhileOffline) {
+        showToast('אין חיבור לשרת כרגע, נסי שוב עוד רגע', '⚠️');
         return;
     }
-    state.parentRewards.push({ id: 'pr_' + Date.now(), title, cost });
-    playSfx('pop');
-    renderShopContent();
-    scheduleSave();
-};
-
-window.deleteParentReward = function(id) {
-    state.parentRewards = state.parentRewards.filter(r => r.id !== id);
-    renderShopContent();
-    scheduleSave();
-};
-
-window.redeemParentReward = function(id) {
-    const reward = state.parentRewards.find(r => r.id === id);
-    if (!reward || state.coins < reward.cost) return;
-    state.coins -= reward.cost;
-    state.redemptionHistory.unshift({
-        title: reward.title,
-        cost: reward.cost,
-        date: new Date().toLocaleDateString('he-IL')
-    });
-    playSfx('fanfare');
-    launchConfetti();
-    showToast(`יש! מימשת את הפרס: ${reward.title}`, '🎁');
-    updateHeaderUI();
-    renderShopContent();
-    scheduleSave();
+    redeemInProgress = true;
+    try {
+        await flushSaves(); // the server must see our latest coins first
+        const res = await fetchWithTimeout(API_REDEEM, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rewardId: id })
+        });
+        if (res.status === 401) return handleLoggedOut();
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            showToast(json.message || 'לא הצלחנו לממש את הפרס', '⚠️');
+            return;
+        }
+        state.coins = Number(json.coins) || 0;
+        serverVersion = Number(json.version) || serverVersion;
+        saveLocalBackup();
+        playSfx('fanfare');
+        launchConfetti();
+        showToast(`יש! מימשת את הפרס: ${reward.title} – עכשיו מחכים להורים`, '🎁');
+        updateHeaderUI();
+        await loadRewards();
+    } catch (err) {
+        showToast('לא הצלחנו לממש את הפרס, נסי שוב', '⚠️');
+    } finally {
+        redeemInProgress = false;
+        renderShopContent();
+    }
 };
 
 /* ==========================================================================
@@ -2548,181 +2467,14 @@ window.tapAbcTile = function(btnEl, key) {
 };
 
 /* ==========================================================================
-   17. PARENT CONTROL & SAFE RESET MODAL
-   ========================================================================== */
-window.openParentModal = function() {
-    state.pendingResetTarget = null;
-    state.parentRewardProfileId = activeProfileId || 'avigail';
-    document.getElementById('parent-modal').classList.remove('hidden');
-    renderParentModalBody();
-};
-
-window.closeParentModal = function() {
-    state.pendingResetTarget = null;
-    document.getElementById('parent-modal').classList.add('hidden');
-};
-
-window.setParentRewardProfile = function(pid) {
-    state.parentRewardProfileId = pid;
-    renderParentModalBody();
-};
-
-window.requestResetConfirmation = function(target) {
-    state.pendingResetTarget = target;
-    renderParentModalBody();
-};
-
-window.cancelResetConfirmation = function() {
-    state.pendingResetTarget = null;
-    renderParentModalBody();
-};
-
-window.executeProfileReset = async function(target) {
-    const targets = target === 'both' ? ['avigail', 'rani'] : [target];
-    for (const pid of targets) {
-        profilesCache[pid] = createDefaultProfileData(pid);
-        if (activeProfileId === pid) {
-            applyProfileToActiveState(pid);
-            selectLevel(1);
-        }
-        await persistToCloudNow(pid);
-    }
-    state.pendingResetTarget = null;
-    renderProfileCards();
-    renderParentModalBody();
-    playSfx('pop');
-
-    const label = target === 'both' ? 'שני הפרופילים אופסו בהצלחה' : `הפרופיל של ${PROFILE_META[target].name} אופס בהצלחה`;
-    showToast(label, '🔄');
-};
-
-window.addParentModalReward = async function() {
-    const pid = state.parentRewardProfileId;
-    const titleEl = document.getElementById('pm-reward-title');
-    const costEl = document.getElementById('pm-reward-cost');
-    const title = titleEl.value.trim();
-    const cost = parseInt(costEl.value, 10);
-    if (!title || isNaN(cost) || cost < 10) {
-        showToast('נא למלא שם פרס ומחיר (לפחות 10 מטבעות)', '⚠️');
-        return;
-    }
-    const newReward = { id: 'pr_' + Date.now(), title, cost };
-    profilesCache[pid].parentRewards.push(newReward);
-    if (activeProfileId === pid) {
-        state.parentRewards.push({ ...newReward });
-    }
-    await persistToCloudNow(pid);
-    playSfx('pop');
-    renderParentModalBody();
-    showToast(`נוסף פרס ל${PROFILE_META[pid].name}! 🎁`, '🎁');
-};
-
-window.deleteParentModalReward = async function(rewardId) {
-    const pid = state.parentRewardProfileId;
-    profilesCache[pid].parentRewards = profilesCache[pid].parentRewards.filter(r => r.id !== rewardId);
-    if (activeProfileId === pid) {
-        state.parentRewards = state.parentRewards.filter(r => r.id !== rewardId);
-    }
-    await persistToCloudNow(pid);
-    renderParentModalBody();
-};
-
-function renderParentModalBody() {
-    const body = document.getElementById('parent-modal-body');
-    if (!body) return;
-
-    const avData = profilesCache.avigail;
-    const raData = profilesCache.rani;
-    const pid = state.parentRewardProfileId;
-    const targetRewards = profilesCache[pid].parentRewards || [];
-
-    const renderResetButton = (targetKey, label, colorClasses) => {
-        if (state.pendingResetTarget === targetKey) {
-            return `
-                <div class="bg-rose-50 border-2 border-rose-300 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-2 animate-pop">
-                    <span class="text-xs font-extrabold text-rose-900">⚠️ בטוחים? כל המטבעות וההתקדמות יימחקו!</span>
-                    <div class="flex gap-2 shrink-0">
-                        <button onclick="executeProfileReset('${targetKey}')" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-black px-3.5 py-2 rounded-xl cursor-pointer">כן, אפס עכשיו</button>
-                        <button onclick="cancelResetConfirmation()" class="bg-white border border-slate-300 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer">ביטול</button>
-                    </div>
-                </div>
-            `;
-        }
-        return `
-            <button onclick="requestResetConfirmation('${targetKey}')" class="w-full ${colorClasses} font-extrabold text-xs sm:text-sm py-3 px-4 rounded-2xl transition cursor-pointer flex items-center justify-between">
-                <span>${label}</span>
-                <span>🔄</span>
-            </button>
-        `;
-    };
-
-    body.innerHTML = `
-        <!-- Section 1: Progress Overview & Safe Reset -->
-        <div class="space-y-3">
-            <h3 class="font-black text-slate-800 text-base">🔄 איפוס התקדמות (לבדיקה או התחלה מחדש)</h3>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div class="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-3">
-                    <div class="font-black text-indigo-900 text-sm mb-1">👧🏻 אביגיל</div>
-                    <div class="text-slate-600">🪙 ${avData.coins} מטבעות • ${avData.completedLevels.length}/7 שלבים • ${avData.learnedLetters.length} אותיות</div>
-                </div>
-                <div class="bg-pink-50/70 border border-pink-200 rounded-2xl p-3">
-                    <div class="font-black text-pink-900 text-sm mb-1">🧚‍♀️ רני</div>
-                    <div class="text-slate-600">🪙 ${raData.coins} מטבעות • ${raData.completedLevels.length}/7 שלבים • ${raData.learnedLetters.length} אותיות</div>
-                </div>
-            </div>
-
-            <div class="space-y-2 pt-1">
-                ${renderResetButton('avigail', 'איפוס מלא של אביגיל בלבד', 'bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900')}
-                ${renderResetButton('rani', 'איפוס מלא של רני בלבד', 'bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-900')}
-                ${renderResetButton('both', 'איפוס מלא של שתיהן (אביגיל + רני)', 'bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800')}
-            </div>
-        </div>
-
-        <!-- Section 2: Manage Custom Parent Rewards per Girl -->
-        <div class="pt-5 border-t border-slate-200 space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <h3 class="font-black text-slate-800 text-base">🎁 ניהול פרסים מאבא ואמא</h3>
-                <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
-                    <button onclick="setParentRewardProfile('avigail')" class="px-3 py-1 rounded-lg text-xs font-extrabold cursor-pointer ${pid === 'avigail' ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-500'}">אביגיל</button>
-                    <button onclick="setParentRewardProfile('rani')" class="px-3 py-1 rounded-lg text-xs font-extrabold cursor-pointer ${pid === 'rani' ? 'bg-white text-pink-600 shadow-2xs' : 'text-slate-500'}">רני</button>
-                </div>
-            </div>
-
-            <div class="space-y-2">
-                ${targetRewards.length ? targetRewards.map(r => `
-                    <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm">
-                        <span class="font-bold text-slate-800">${r.title} <span class="text-amber-700 text-xs">(${r.cost} 🪙)</span></span>
-                        <button onclick="deleteParentModalReward('${r.id}')" class="text-rose-600 hover:bg-rose-100 px-2 py-1 rounded-lg text-xs font-bold cursor-pointer">מחק 🗑️</button>
-                    </div>
-                `).join('') : `<div class="text-xs text-slate-400 text-center py-2">אין פרסים מוגדרים עדיין</div>`}
-            </div>
-
-            <div class="flex flex-col sm:flex-row gap-2">
-                <input id="pm-reward-title" type="text" placeholder="פרס חדש ל${PROFILE_META[pid].name} (למשל: גלידה 🍦)" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-indigo-500" />
-                <input id="pm-reward-cost" type="number" min="10" step="10" placeholder="מטבעות" class="w-full sm:w-28 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold focus:outline-none focus:border-indigo-500" />
-                <button onclick="addParentModalReward()" class="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-sm px-5 py-2.5 rounded-xl cursor-pointer">הוסף</button>
-            </div>
-        </div>
-
-        <!-- Section 3: Cloud Sync Diagnostics -->
-        <div class="pt-4 border-t border-slate-200 text-xs flex items-center justify-between text-slate-500">
-            <span>סטטוס שמירה בענן:</span>
-            <span class="font-bold ${cloudConnected && !cloudErrorMsg ? 'text-emerald-700' : 'text-rose-600'}">
-                ${cloudConnected && !cloudErrorMsg ? 'מחובר ומסונכרן ☁️✓' : `בעיה בחיבור (${cloudErrorMsg || 'לא מחובר'})`}
-            </span>
-        </div>
-    `;
-}
-
-/* ==========================================================================
-   18. APP BOOTSTRAP
+   18. APP BOOTSTRAP (page is only served to a logged-in student)
    ========================================================================== */
 function bootstrapApp() {
-    loadLocalBackups();
     initVoices();
-    renderProfileCards();
+    document.getElementById('app-wrapper').classList.remove('hidden');
     initCloudStorage();
+    selectLevel(state.currentLevelId || 1);
+    showToast(`שלום ${CURRENT_USER.displayName}! 🌟`, '👋');
 }
 
 if (document.readyState === 'loading') {
@@ -2731,10 +2483,10 @@ if (document.readyState === 'loading') {
     bootstrapApp();
 }
 
-// Flush any pending save immediately if user refreshes or switches tabs
+// Flush unsaved progress if the tab is hidden/closed; resync when it comes back
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && activeProfileId && cloudReady) {
-        persistToCloudNow(activeProfileId, { keepalive: true });
+    if (document.visibilityState === 'hidden' && cloudReady && (hasUnsavedChanges || dirtyWhileOffline)) {
+        pushProgress({ keepalive: true });
     } else if (document.visibilityState === 'visible') {
         pollServerOnce();
     }

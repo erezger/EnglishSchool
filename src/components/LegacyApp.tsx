@@ -2,20 +2,34 @@
 
 import { useEffect } from 'react';
 import { LEGACY_MARKUP } from '@/legacy/markup';
+import type { Progress } from '@/lib/progress';
+
+export type LegacyBoot = {
+  user: { id: string; username: string; displayName: string };
+  progress: Progress | null;
+};
+
+declare global {
+  interface Window {
+    __EC_BOOT__?: LegacyBoot;
+  }
+}
 
 /**
- * Stage 1 of the migration: renders the original app's markup as-is and boots
- * its client logic (src/legacy/app.js). The script relies on inline onclick
- * handlers and window.* functions, so the markup is injected verbatim.
- * Next stage: split this into real React components.
+ * The game: renders the original app's markup as-is and boots its client logic
+ * (src/legacy/app.js) for the logged-in student passed in `boot`.
+ * The script relies on inline onclick handlers and window.* functions, so the
+ * markup is injected verbatim. Switching user always does a full page load,
+ * so the module (which runs once) always starts with the right student.
  */
-export default function LegacyApp() {
+export default function LegacyApp({ boot }: { boot: LegacyBoot }) {
   useEffect(() => {
-    // Dynamic import runs the module exactly once (it is cached afterwards),
-    // so React Strict Mode's double effect in dev is harmless.
+    window.__EC_BOOT__ = boot;
     import('@/legacy/app.js').catch((err) => {
       console.error('Failed to start the app', err);
     });
+    // boot is fixed for the lifetime of this page
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <div id="legacy-root" dangerouslySetInnerHTML={{ __html: LEGACY_MARKUP }} />;
