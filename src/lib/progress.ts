@@ -151,7 +151,13 @@ export function summarize(data: ProgressData | undefined) {
     ...spellingSummary(data?.spellingStats),
     ...reviewSummary(data),
     placement: placementOf(data),
+    ...dictationSummary(data?.dictationStats),
   };
+}
+
+function dictationSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { c?: number }>) : [];
+  return { dictationTried: stats.length, dictationPerfect: stats.filter((s) => (s?.c ?? 0) > 0).length };
 }
 
 function placementOf(data: ProgressData | undefined): { date: string; passedThrough: number } | null {

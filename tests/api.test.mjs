@@ -509,3 +509,30 @@ describe('placement test', () => {
     assert.deepEqual(s.progress.placement, { date: '2026-11-22', passedThrough: 3 });
   });
 });
+
+describe('dictation & practice hub', () => {
+  test('pages are for kids only and list the sources', async () => {
+    const kid = await login(famA.kid, '5555');
+    const hub = await fetch(BASE + '/practice', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(hub.status, 200);
+    const hubHtml = await hub.text();
+    assert.ok(hubHtml.includes('הכתבה') && hubHtml.includes('שומעים ומאייתים'));
+    const page = await fetch(BASE + '/practice/dictation', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(page.status, 200);
+    assert.ok((await page.text()).includes('משפטים לכיתה'));
+    for (const path of ['/practice', '/practice/dictation']) {
+      const r = await fetch(BASE + path, { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+      assert.ok([303, 307, 308].includes(r.status), path);
+    }
+  });
+
+  test('dictation stats survive and show in the parent summary', async () => {
+    const kid = await login(famA.kid, '5555');
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const dictationStats = { 'd4-1': { c: 1, w: 0, t: 1 }, 'd4-2': { c: 0, w: 2, t: 1 } };
+    assert.equal((await kid('PUT', '/api/me/progress', { data: { ...p.data, dictationStats }, baseVersion: p.version })).status, 200);
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.progress.dictationTried, 2);
+    assert.equal(s.progress.dictationPerfect, 1);
+  });
+});
