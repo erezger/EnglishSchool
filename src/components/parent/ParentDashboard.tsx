@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api-client';
 import { AddGuardianModal, AddStudentModal, ChangePasswordModal } from './forms';
 import StudentCard from './StudentCard';
+import WordLists from './WordLists';
 import type { FamilyOverview, Me, RedemptionItem } from './types';
 import { Btn, ConfirmWithPassword, ErrorNote, formatDate, Section } from './ui';
 
@@ -131,6 +132,8 @@ export default function ParentDashboard({ me, familyId }: { me: Me; familyId?: s
               </div>
             )}
           </Section>
+
+          <WordLists qs={qs} students={data.students} />
 
           <Section
             title="👨‍👩‍👧 הורים, מורים וחונכים"

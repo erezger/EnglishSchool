@@ -9,9 +9,12 @@ const ADMIN = { username: process.env.ADMIN_USERNAME ?? 'admin', password: proce
 const rnd = () => Math.random().toString(36).slice(2, 8);
 
 /** Minimal client with its own cookie (= one browser/device). */
+const cookies = new WeakMap();
+const cookieOf = async (c) => cookies.get(c)();
+
 function client() {
   let cookie = '';
-  return async function call(method, path, body, headers = {}) {
+  const call = async function call(method, path, body, headers = {}) {
     const res = await fetch(BASE + path, {
       method,
       headers: {
@@ -30,6 +33,8 @@ function client() {
     const json = await res.json().catch(() => ({}));
     return { status: res.status, json };
   };
+  cookies.set(call, () => cookie);
+  return call;
 }
 
 async function login(username, secret) {
@@ -229,5 +234,106 @@ describe('parent actions', () => {
     const g = await parentB('POST', '/api/family/guardians', { username: `t_${rnd()}`, displayName: 'Teacher', password: 'teacher-pass-1' });
     assert.equal(g.status, 201);
     assert.equal((await parentB('DELETE', `/api/family/guardians/${g.json.id}`, { confirmPassword: famB.pw })).status, 200);
+  });
+});
+
+describe('word lists & spelling', () => {
+  let listId;
+
+  // an earlier test changes Kid A's PIN to 5555, which logs the old session out
+  before(async () => {
+    kidA = await login(famA.kid, '5555');
+  });
+
+  test('parent creates a list and pastes words (with meanings, duplicates, invalid lines)', async () => {
+    const r = await parentA('POST', '/api/family/word-lists', { title: 'Unit 3', studentId: null });
+    assert.equal(r.status, 201);
+    listId = r.json.id;
+    const add = await parentA('POST', `/api/family/word-lists/${listId}/words`, {
+      text: 'apple - תפוח\nbanana\nBanana\nice cream = גלידה\nשלום\nbecause',
+    });
+    assert.equal(add.status, 201);
+    assert.equal(add.json.added, 4); // apple, banana, ice cream, because
+    assert.deepEqual(add.json.invalid, ['שלום']);
+    const again = await parentA('POST', `/api/family/word-lists/${listId}/words`, { text: 'apple' });
+    assert.equal(again.json.duplicates, 1);
+    const { json } = await parentA('GET', '/api/family/word-lists');
+    const list = json.lists.find((l) => l.id === listId);
+    assert.deepEqual(list.words.map((w) => w.word), ['apple', 'banana', 'ice cream', 'because']);
+    assert.equal(list.words[0].hebrew, 'תפוח');
+  });
+
+  test("lists are private to the family; students can't manage them", async () => {
+    const other = await parentB('GET', '/api/family/word-lists');
+    assert.ok(other.json.lists.every((l) => l.id !== listId));
+    assert.equal((await parentB('POST', `/api/family/word-lists/${listId}/words`, { text: 'hack' })).status, 404);
+    assert.equal((await parentB('DELETE', `/api/family/word-lists/${listId}`)).status, 404);
+    const word = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === listId).words[0];
+    assert.equal((await parentB('PATCH', `/api/family/words/${word.id}`, { hebrew: 'x' })).status, 404);
+    assert.equal((await kidA('GET', '/api/family/word-lists')).status, 403);
+    assert.equal((await kidA('POST', '/api/family/word-lists', { title: 'mine' })).status, 403);
+  });
+
+  test('AI completion fills only empty fields and is marked for review (or is cleanly disabled)', async () => {
+    const { json: before } = await parentA('GET', '/api/family/word-lists');
+    const r = await parentA('POST', `/api/family/word-lists/${listId}/enrich`);
+    if (!before.aiEnabled) {
+      assert.equal(r.status, 503);
+      return;
+    }
+    assert.equal(r.status, 200, JSON.stringify(r.json));
+    assert.equal(r.json.remaining, 0);
+    const list = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === listId);
+    const apple = list.words.find((w) => w.word === 'apple');
+    assert.equal(apple.hebrew, 'תפוח', "parent's meaning kept");
+    assert.ok(apple.exampleEn && apple.aiGenerated);
+    // a parent edit/approve clears the AI flag
+    assert.equal((await parentA('PATCH', `/api/family/words/${apple.id}`, { hebrew: 'תפוח עץ' })).status, 200);
+    const after = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === listId);
+    const apple2 = after.words.find((w) => w.word === 'apple');
+    assert.equal(apple2.hebrew, 'תפוח עץ');
+    assert.equal(apple2.aiGenerated, false);
+  });
+
+  test('word validation: English only, no duplicates on rename', async () => {
+    const list = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === listId);
+    const [a, b] = list.words;
+    assert.equal((await parentA('PATCH', `/api/family/words/${a.id}`, { word: 'שלום' })).status, 400);
+    assert.equal((await parentA('PATCH', `/api/family/words/${a.id}`, { word: b.word.toUpperCase() })).status, 409);
+  });
+
+  test('grade: parent can set it, validated', async () => {
+    assert.equal((await parentA('PATCH', `/api/family/students/${kidAId}`, { grade: 4 })).status, 200);
+    assert.equal((await parentA('PATCH', `/api/family/students/${kidAId}`, { grade: 13 })).status, 400);
+    const kid = (await parentA('GET', '/api/family')).json.students.find((s) => s.id === kidAId);
+    assert.equal(kid.grade, 4);
+    assert.equal(kid.displayName, 'Kid A', 'grade-only update keeps the name');
+  });
+
+  test('list assigned to one kid is visible only to that kid', async () => {
+    const r = await parentA('POST', '/api/family/students', { username: `sib_${rnd()}`, displayName: 'Sibling', pin: '1357' });
+    const sibling = await login((await parentA('GET', '/api/family')).json.students.find((s) => s.id === r.json.id).username, '1357');
+    const own = await parentA('POST', '/api/family/word-lists', { title: `OnlyForKidA_${rnd()}`, studentId: kidAId });
+    await parentA('POST', `/api/family/word-lists/${own.json.id}/words`, { text: 'secret' });
+    const title = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === own.json.id).title;
+    const pageFor = async (c) => {
+      const res = await fetch(BASE + '/practice/spell', { headers: { Cookie: await cookieOf(c) } });
+      return res.text();
+    };
+    assert.ok((await pageFor(kidA)).includes(title));
+    assert.ok(!(await pageFor(sibling)).includes(title));
+    // can't assign a list to another family's kid
+    assert.equal((await parentA('POST', '/api/family/word-lists', { title: 'x', studentId: kidBId })).status, 400);
+  });
+
+  test('spelling stats survive saves from the game (unknown fields preserved)', async () => {
+    const { json: p } = await kidA('GET', '/api/me/progress');
+    const stats = { apple: { c: 1, w: 0, s: 1, t: 1 } };
+    const r = await kidA('PUT', '/api/me/progress', { data: { ...p.data, spellingStats: stats }, baseVersion: p.version });
+    assert.equal(r.status, 200);
+    const { json: p2 } = await kidA('GET', '/api/me/progress');
+    assert.deepEqual(p2.data.spellingStats, stats);
+    const kid = (await parentA('GET', '/api/family')).json.students.find((s) => s.id === kidAId);
+    assert.equal(kid.progress.spellingPracticed, 1);
   });
 });

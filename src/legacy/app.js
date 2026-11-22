@@ -328,9 +328,24 @@ function loadLocalBackup() {
 }
 
 /* ---------- state <-> stored data ---------- */
+// Fields written by other parts of the app (e.g. spelling stats from /practice/spell) that this
+// game doesn't use. They are kept as-is and sent back on every save so they are never lost.
+const GAME_KEYS = ['coins', 'dailyStreak', 'lastActiveDate', 'completedLevels', 'learnedLetters', 'readWords',
+    'readSentences', 'mistakes', 'bdBestScore', 'slowSpeech', 'sfxMuted', 'preferredVoiceName', 'ownedItems',
+    'equippedAvatar', 'equippedPet', 'equippedTheme', 'updatedAt', 'writeId', 'editorId'];
+let passthroughData = {};
+function capturePassthrough(raw) {
+    passthroughData = {};
+    if (!raw || typeof raw !== 'object') return;
+    Object.keys(raw).forEach((key) => {
+        if (!GAME_KEYS.includes(key)) passthroughData[key] = raw[key];
+    });
+}
+
 function extractPersistableState() {
     lastLocalWriteId = Date.now();
     return {
+        ...passthroughData,
         coins: Number(state.coins) || 0,
         dailyStreak: Number(state.dailyStreak) || 1,
         lastActiveDate: state.lastActiveDate || new Date().toISOString().slice(0, 10),
@@ -391,6 +406,7 @@ function assignProgressToState(data) {
 
 /** First load: apply data, update the daily streak, render everything. Returns true if the streak date changed. */
 function applyProfileToActiveState(rawData) {
+    capturePassthrough(rawData);
     const data = sanitizeLoadedProfile(rawData);
     const today = new Date().toISOString().slice(0, 10);
     let changed = false;
@@ -421,6 +437,7 @@ function applyProfileToActiveState(rawData) {
 /** Server copy wins (another device, or a parent reset). */
 function adoptServerProgress(progress, { notify = false } = {}) {
     serverVersion = Number(progress.version) || serverVersion;
+    capturePassthrough(progress.data);
     assignProgressToState(sanitizeLoadedProfile(progress.data));
     hasUnsavedChanges = false;
     dirtyWhileOffline = false;
@@ -635,6 +652,14 @@ async function switchUser() {
     window.location.href = '/login';
 }
 window.switchUser = switchUser;
+
+window.goToPractice = async function(path) {
+    try {
+        if (hasUnsavedChanges || dirtyWhileOffline) await Promise.race([pushProgress(), new Promise(r => setTimeout(r, 3000))]);
+        await flushSaves();
+    } catch (err) {}
+    window.location.href = path;
+};
 
 window.goToParentArea = async function() {
     try {

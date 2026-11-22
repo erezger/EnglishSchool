@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api-client';
+import { gradeLabel } from '@/content/wordbank';
 import { avatarEmoji, petEmoji, TOTAL_LEVELS } from '@/lib/catalog';
 import type { StudentSummary } from './types';
 import { Btn, ConfirmWithPassword, ErrorNote, Field, formatDate } from './ui';
@@ -23,6 +24,7 @@ export default function StudentCard({
   const [rewardTitle, setRewardTitle] = useState('');
   const [rewardCost, setRewardCost] = useState('');
   const [name, setName] = useState(student.displayName);
+  const [grade, setGrade] = useState<string>(student.grade ? String(student.grade) : '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const p = student.progress;
@@ -56,6 +58,11 @@ export default function StudentCard({
             <span className="text-xs font-bold text-slate-500" dir="ltr">
               @{student.username}
             </span>
+            {student.grade && (
+              <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200">
+                כיתה {gradeLabel(student.grade)}
+              </span>
+            )}
             {!student.hasPin && (
               <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
                 ⚠️ עוד לא הוגדר קוד כניסה
@@ -82,6 +89,12 @@ export default function StudentCard({
         <Stat label="משפטים" value={String(p.readSentences)} />
         <Stat label="רצף ימים" value={`🔥 ${p.dailyStreak}`} />
       </div>
+      {p.spellingPracticed > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-amber-50/60 border border-amber-100 rounded-xl px-3 py-2">
+          🐝 איות: {p.spellingPracticed} מילים תורגלו · <span className="text-emerald-700">{p.spellingKnown} יודעים</span>
+          {p.spellingWeak > 0 && <span className="text-rose-700"> · {p.spellingWeak} צריכות חיזוק</span>}
+        </div>
+      )}
 
       {open && (
         <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
@@ -156,6 +169,26 @@ export default function StudentCard({
                 שמור
               </Btn>
             </form>
+            <label className="flex items-center gap-2 mb-2 text-xs font-bold text-slate-600">
+              כיתה:
+              <select
+                value={grade}
+                disabled={busy}
+                onChange={(e) => {
+                  setGrade(e.target.value);
+                  void act(() => api(`${base}${qs}`, { method: 'PATCH', body: { grade: e.target.value || null } }));
+                }}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm bg-white"
+              >
+                <option value="">לא הוגדר</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
+                  <option key={g} value={g}>
+                    {gradeLabel(g)}
+                  </option>
+                ))}
+              </select>
+              <span className="font-medium text-slate-400">(קובע את מאגר המילים לאיות)</span>
+            </label>
             <div className="flex flex-wrap gap-2">
               <Btn variant={student.hasPin ? 'secondary' : 'primary'} onClick={() => setDialog('pin')}>
                 🔢 {student.hasPin ? 'שינוי קוד כניסה' : 'הגדרת קוד כניסה'}
