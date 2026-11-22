@@ -694,6 +694,41 @@ function renderCheckBanner(openCheck) {
     `;
 }
 
+function renderPlacementBanner() {
+    const existing = document.getElementById('placement-banner');
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem('placement_dismissed') === '1'; } catch (e) {}
+    if (passthroughData.placement || state.completedLevels.length >= LEVELS.length || dismissed) {
+        if (existing) existing.remove();
+        return;
+    }
+    if (existing) return;
+    const el = document.createElement('div');
+    el.id = 'placement-banner';
+    const wrapper = document.getElementById('app-wrapper');
+    wrapper.insertBefore(el, wrapper.children[1] || null);
+    el.innerHTML = `
+        <div class="mb-5 bg-gradient-to-l from-violet-100 to-fuchsia-50 border-2 border-violet-300 rounded-3xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">🧭</span>
+                <div>
+                    <div class="font-black text-violet-950">כבר יודעים חלק? מבחן מיקום קצר!</div>
+                    <div class="text-xs text-violet-900">כמה שאלות – ומדלגים ישר לשלב שמתאים לך</div>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="goToPractice('/practice/placement')" class="bg-violet-600 hover:bg-violet-700 text-white font-black px-5 py-2.5 rounded-2xl shadow-sm cursor-pointer">למבחן מיקום 🧭</button>
+                <button onclick="dismissPlacementBanner()" class="bg-white border border-violet-200 text-violet-800 font-bold px-3 py-2.5 rounded-2xl cursor-pointer">לא עכשיו</button>
+            </div>
+        </div>
+    `;
+}
+window.dismissPlacementBanner = function() {
+    try { sessionStorage.setItem('placement_dismissed', '1'); } catch (e) {}
+    const el = document.getElementById('placement-banner');
+    if (el) el.remove();
+};
+
 function renderReviewBanner(review) {
     let el = document.getElementById('review-banner');
     const show = review && review.count > 0 && !review.doneToday;
@@ -2598,7 +2633,9 @@ function bootstrapApp() {
     initVoices();
     document.getElementById('app-wrapper').classList.remove('hidden');
     initCloudStorage();
-    selectLevel(state.currentLevelId || 1);
+    const firstOpenLevel = LEVELS.find(l => !state.completedLevels.includes(l.id));
+    selectLevel(firstOpenLevel ? firstOpenLevel.id : 1);
+    renderPlacementBanner();
     showToast(`שלום ${CURRENT_USER.displayName}! 🌟`, '👋');
     loadNotices();
     setInterval(() => { if (document.visibilityState === 'visible') loadNotices(); }, 60000);

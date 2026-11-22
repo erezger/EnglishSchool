@@ -150,7 +150,13 @@ export function summarize(data: ProgressData | undefined) {
     equippedPet: typeof data?.equippedPet === 'string' ? data.equippedPet : 'pet_dog',
     ...spellingSummary(data?.spellingStats),
     ...reviewSummary(data),
+    placement: placementOf(data),
   };
+}
+
+function placementOf(data: ProgressData | undefined): { date: string; passedThrough: number } | null {
+  const p = data?.placement as { date?: string; passedThrough?: number } | undefined;
+  return p && typeof p.date === 'string' ? { date: p.date, passedThrough: Number(p.passedThrough) || 0 } : null;
 }
 
 /** Daily review (spaced repetition) written by /practice/daily. */
