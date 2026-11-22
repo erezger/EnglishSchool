@@ -26,6 +26,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - default
+      - etechlo_net
 
 volumes:
   pgdata:
+networks:
+  etechlo_net:
+    external: true
