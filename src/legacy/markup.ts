@@ -59,6 +59,12 @@ export const LEGACY_MARKUP = String.raw`
                         <span class="text-xs font-semibold hidden sm:inline">ימים</span>
                     </div>
 
+                    <!-- Daily review (React page) -->
+                    <button onclick="goToPractice('/practice/daily')" class="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-300 text-sky-800 px-3.5 py-2 rounded-2xl font-extrabold text-xs sm:text-sm transition active:scale-95 cursor-pointer" title="חזרה יומית">
+                        <span>⏰</span>
+                        <span>5 דקות ביום</span>
+                    </button>
+
                     <!-- Spelling practice (React page) -->
                     <button onclick="goToPractice('/practice/spell')" class="flex items-center gap-1.5 bg-gradient-to-l from-amber-400 to-yellow-300 hover:from-amber-500 hover:to-yellow-400 text-amber-950 px-3.5 py-2 rounded-2xl font-extrabold text-xs sm:text-sm shadow-sm transition active:scale-95 cursor-pointer" title="שומעים ומאייתים">
                         <span>🐝</span>

@@ -1,11 +1,25 @@
-import { openCheckFor, unseenAdjustments } from '@/lib/checks';
+import { meaningIndex, openCheckFor, unseenAdjustments } from '@/lib/checks';
 import { json, requireUser, route } from '@/lib/http';
+import { getProgress } from '@/lib/progress';
+import { dailyReviewOf, planSession, todayStr } from '@/lib/review';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/me/notices — coin changes by parents not seen yet + whether a check is waiting. */
+/** GET /api/me/notices — parent coin changes not seen yet, a waiting check, and today's review. */
 export const GET = route(async () => {
   const student = await requireUser('student');
-  const [adjustments, check] = await Promise.all([unseenAdjustments(student.id), openCheckFor(student.id)]);
-  return json({ adjustments, openCheck: check ? { id: check.id, total: check.total } : null });
+  const [adjustments, check, progress, meanings] = await Promise.all([
+    unseenAdjustments(student.id),
+    openCheckFor(student.id),
+    getProgress(student.id),
+    student.familyId ? meaningIndex(student.familyId) : Promise.resolve(new Map()),
+  ]);
+  const today = todayStr();
+  const data = progress?.data ?? {};
+  const plan = planSession(data, meanings, today);
+  return json({
+    adjustments,
+    openCheck: check ? { id: check.id, total: check.total } : null,
+    review: { count: plan.keys.length, doneToday: dailyReviewOf(data).last === today, streak: dailyReviewOf(data).streak },
+  });
 });

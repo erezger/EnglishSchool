@@ -90,6 +90,13 @@ export default function StudentCard({
         <Stat label="משפטים" value={String(p.readSentences)} />
         <Stat label="רצף ימים" value={`🔥 ${p.dailyStreak}`} />
       </div>
+      {p.reviewTracked > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-sky-50/60 border border-sky-100 rounded-xl px-3 py-2">
+          ⏰ חזרה יומית: {p.reviewStreak > 0 ? <span className="text-orange-600">🔥 {p.reviewStreak} ימים ברצף</span> : 'אין רצף כרגע'}
+          {' · '}אחרונה: {p.reviewLast ?? '—'} · {p.reviewMastered} מתוך {p.reviewTracked} פריטים יושבים טוב
+          {p.reviewDue > 0 && <span className="text-sky-800"> · {p.reviewDue} מחכים לחזרה</span>}
+        </div>
+      )}
       {p.spellingPracticed > 0 && (
         <div className="mt-2 text-xs font-bold text-slate-600 bg-amber-50/60 border border-amber-100 rounded-xl px-3 py-2">
           🐝 איות: {p.spellingPracticed} מילים תורגלו · <span className="text-emerald-700">{p.spellingKnown} יודעים</span>

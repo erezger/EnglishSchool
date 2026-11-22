@@ -19,6 +19,11 @@ export type StudentSummary = {
     spellingPracticed: number;
     spellingKnown: number;
     spellingWeak: number;
+    reviewLast: string | null;
+    reviewStreak: number;
+    reviewTracked: number;
+    reviewDue: number;
+    reviewMastered: number;
   };
   grade: number | null;
   rewards: { id: string; title: string; cost: number }[];

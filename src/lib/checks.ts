@@ -46,7 +46,7 @@ function distractors(correct: string, pool: string[], n = 3): string[] {
 }
 
 /** Every word we know a meaning for: phonics words, grade banks, the family's lists. */
-async function meaningIndex(familyId: string): Promise<Map<string, { hebrew: string; emoji: string }>> {
+export async function meaningIndex(familyId: string): Promise<Map<string, { hebrew: string; emoji: string }>> {
   const map = new Map<string, { hebrew: string; emoji: string }>();
   for (const w of PHONICS_WORDS) map.set(w.word.toLowerCase(), { hebrew: w.hebrew, emoji: w.emoji });
   for (const topics of Object.values(WORD_BANK)) {
