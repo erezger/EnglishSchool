@@ -27,6 +27,7 @@ export type StudentSummary = {
     placement: { date: string; passedThrough: number } | null;
     dictationTried: number;
     dictationPerfect: number;
+    grammar: Record<string, number>;
   };
   grade: number | null;
   rewards: { id: string; title: string; cost: number }[];

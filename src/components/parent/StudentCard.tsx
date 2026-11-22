@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api-client';
+import { GRAMMAR } from '@/content/grammar';
 import { gradeLabel } from '@/content/wordbank';
+
+const GRAMMAR_TITLES: Record<string, string> = Object.fromEntries(GRAMMAR.map((t) => [t.id, t.title]));
 import { avatarEmoji, petEmoji, TOTAL_LEVELS } from '@/lib/catalog';
 import ChecksAndCoins from './ChecksAndCoins';
 import type { StudentSummary } from './types';
@@ -90,6 +93,16 @@ export default function StudentCard({
         <Stat label="משפטים" value={String(p.readSentences)} />
         <Stat label="רצף ימים" value={`🔥 ${p.dailyStreak}`} />
       </div>
+      {Object.keys(p.grammar).length > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-emerald-50/60 border border-emerald-100 rounded-xl px-3 py-2">
+          📘 דקדוק (שיא):{' '}
+          {Object.entries(p.grammar).map(([topic, best]) => (
+            <span key={topic} className={`ms-2 font-english ${best >= 80 ? 'text-emerald-700' : 'text-rose-700'}`} dir="ltr">
+              {GRAMMAR_TITLES[topic] ?? topic} {best}%
+            </span>
+          ))}
+        </div>
+      )}
       {p.dictationTried > 0 && (
         <div className="mt-2 text-xs font-bold text-slate-600 bg-indigo-50/60 border border-indigo-100 rounded-xl px-3 py-2">
           ✍️ הכתבה: {p.dictationPerfect} מתוך {p.dictationTried} משפטים נכתבו מושלם
