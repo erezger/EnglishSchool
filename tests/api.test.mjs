@@ -457,3 +457,39 @@ describe('mastery checks & coin adjustments', () => {
     assert.equal(fam.coinAdjustments[0].seen, true);
   });
 });
+
+describe('daily review (spaced repetition)', () => {
+  let kid;
+  before(async () => {
+    kid = await login(famA.kid, '5555');
+  });
+
+  test('today counts learned items; items due in the future are skipped', async () => {
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const base = { ...p.data, learnedLetters: ['a', 'b'], readWords: ['bat'], mistakes: [], spellingStats: {}, reviewStats: {}, dailyReview: {} };
+    assert.equal((await kid('PUT', '/api/me/progress', { data: base, baseVersion: p.version })).status, 200);
+    let review = (await kid('GET', '/api/me/notices')).json.review;
+    assert.equal(review.count, 3);
+    assert.equal(review.doneToday, false);
+
+    const { json: p2 } = await kid('GET', '/api/me/progress');
+    const reviewStats = { 'letter:a': { box: 3, due: '2999-01-01' }, 'letter:b': { box: 1, due: '2000-01-01' } };
+    await kid('PUT', '/api/me/progress', { data: { ...p2.data, reviewStats }, baseVersion: p2.version });
+    review = (await kid('GET', '/api/me/notices')).json.review;
+    assert.equal(review.count, 2, 'b is due, bat is new, a is not due yet');
+  });
+
+  test('daily page: kids only', async () => {
+    const kidPage = await fetch(BASE + '/practice/daily', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(kidPage.status, 200);
+    assert.ok((await kidPage.text()).includes('5 דקות ביום'));
+    const parentPage = await fetch(BASE + '/practice/daily', { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(parentPage.status));
+  });
+
+  test('parent dashboard shows review summary', async () => {
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.progress.reviewTracked, 2);
+    assert.equal(s.progress.reviewDue, 1);
+  });
+});

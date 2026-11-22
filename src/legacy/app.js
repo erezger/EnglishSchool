@@ -661,6 +661,7 @@ async function loadNotices() {
         if (!res.ok) return;
         const json = await res.json();
         renderCheckBanner(json.openCheck);
+        renderReviewBanner(json.review);
         if (Array.isArray(json.adjustments) && json.adjustments.length) showCoinAdjustments(json.adjustments);
     } catch (err) {
         // not critical
@@ -689,6 +690,34 @@ function renderCheckBanner(openCheck) {
                 </div>
             </div>
             <button onclick="goToPractice('/practice/check')" class="bg-amber-500 hover:bg-amber-600 text-white font-black px-5 py-2.5 rounded-2xl shadow-sm cursor-pointer">מתחילים 🚀</button>
+        </div>
+    `;
+}
+
+function renderReviewBanner(review) {
+    let el = document.getElementById('review-banner');
+    const show = review && review.count > 0 && !review.doneToday;
+    if (!show) {
+        if (el) el.remove();
+        return;
+    }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'review-banner';
+        const wrapper = document.getElementById('app-wrapper');
+        const after = document.getElementById('check-banner') || wrapper.children[0];
+        wrapper.insertBefore(el, after.nextSibling);
+    }
+    el.innerHTML = `
+        <div class="mb-5 bg-gradient-to-l from-sky-100 to-indigo-50 border-2 border-sky-300 rounded-3xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">⏰</span>
+                <div>
+                    <div class="font-black text-sky-950">${Number(review.count)} דברים לחזרה היום – 5 דקות!</div>
+                    <div class="text-xs text-sky-900">${review.streak > 0 ? '🔥 רצף של ' + Number(review.streak) + ' ימים – לא לשבור אותו!' : 'סיום החזרה = בונוס מטבעות 🪙'}</div>
+                </div>
+            </div>
+            <button onclick="goToPractice('/practice/daily')" class="bg-sky-500 hover:bg-sky-600 text-white font-black px-5 py-2.5 rounded-2xl shadow-sm cursor-pointer">לחזרה היומית ⏰</button>
         </div>
     `;
 }

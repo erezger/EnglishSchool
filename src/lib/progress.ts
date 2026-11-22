@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 import { AVATARS, PETS, THEMES } from './catalog';
 import { query } from './db';
+import { addDays, todayStr } from './review';
 
 export type ProgressData = Record<string, unknown>;
 export type Progress = { data: ProgressData; version: number; updatedAt: string };
@@ -148,6 +149,21 @@ export function summarize(data: ProgressData | undefined) {
     equippedAvatar: typeof data?.equippedAvatar === 'string' ? data.equippedAvatar : 'av_girl',
     equippedPet: typeof data?.equippedPet === 'string' ? data.equippedPet : 'pet_dog',
     ...spellingSummary(data?.spellingStats),
+    ...reviewSummary(data),
+  };
+}
+
+/** Daily review (spaced repetition) written by /practice/daily. */
+function reviewSummary(data: ProgressData | undefined) {
+  const daily = (data?.dailyReview ?? {}) as { last?: string; streak?: number };
+  const stats = data?.reviewStats && typeof data.reviewStats === 'object' ? Object.values(data.reviewStats as Record<string, { box?: number; due?: string }>) : [];
+  const today = todayStr();
+  return {
+    reviewLast: typeof daily.last === 'string' ? daily.last : null,
+    reviewStreak: daily.last === today || daily.last === addDays(today, -1) ? Number(daily.streak) || 0 : 0,
+    reviewTracked: stats.length,
+    reviewDue: stats.filter((s) => typeof s?.due === 'string' && s.due <= today).length,
+    reviewMastered: stats.filter((s) => (s?.box ?? 0) >= 4).length,
   };
 }
 
