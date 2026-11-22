@@ -6,6 +6,7 @@
 - Mastery check ("מבחן אמת") + parent coin add/remove with reason (PR #5)
 - Daily spaced-repetition review "5 דקות ביום" (PR #6)
 - Placement test "מבחן מיקום" (PR #7)
+- Sentence dictation + practice hub (PR #8)
 
 Ideas and requests not built yet, roughly by priority. Move an item to a branch/PR when work starts.
 
@@ -15,7 +16,6 @@ Ideas and requests not built yet, roughly by priority. Move an item to a branch/
 ## Learning content
 
 - Sight-words track (the, said, because, friend…) as its own game modes (partly in the grade 4 bank).
-- Sentence dictation: hear a sentence, type all of it.
 - Reading comprehension: short graded stories with audio, tap a word to hear/translate, questions (unseen prep).
 - Grade 3–4 grammar mini-games: am/is/are, have/has, there is/are, plurals, present simple.
 - Speaking: say the word into the mic (Chrome speech recognition) and get feedback.

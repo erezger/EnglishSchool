@@ -90,6 +90,11 @@ export default function StudentCard({
         <Stat label="משפטים" value={String(p.readSentences)} />
         <Stat label="רצף ימים" value={`🔥 ${p.dailyStreak}`} />
       </div>
+      {p.dictationTried > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-indigo-50/60 border border-indigo-100 rounded-xl px-3 py-2">
+          ✍️ הכתבה: {p.dictationPerfect} מתוך {p.dictationTried} משפטים נכתבו מושלם
+        </div>
+      )}
       {p.placement && (
         <div className="mt-2 text-xs font-bold text-slate-600 bg-violet-50/60 border border-violet-100 rounded-xl px-3 py-2">
           🧭 מבחן מיקום ({p.placement.date}): {p.placement.passedThrough > 0 ? `עבר/ה עד שלב ${p.placement.passedThrough}` : 'התחיל/ה מההתחלה'}
