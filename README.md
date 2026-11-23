@@ -76,6 +76,14 @@ nginx: see `deploy/nginx.conf.example` (proxy to 127.0.0.1:APP_PORT, keep the X-
 - Every deploy (GitHub Actions) first dumps the DB to `~/backups/<env>/<date>_<commit>.sql.gz`
   (last 14 kept). If the backup fails, the deploy is aborted.
 
+Off-server copy (recommended): set `BACKUP_UPLOAD_URL` in the server `.env` and every deploy also uploads the
+backup to Oracle Object Storage (`<env>/<file>.sql.gz`). If the upload fails the deploy still continues.
+1. OCI Console → Object Storage → create a bucket (e.g. `school-backups`, private).
+2. Bucket → Pre-Authenticated Requests → Create: target "Objects with prefix" (empty prefix),
+   access "Permit object writes", pick an expiry (e.g. 1 year — renew it before it expires).
+3. Copy the URL (it ends with `/o/`) into `BACKUP_UPLOAD_URL=` in `~/school/.env` and `~/school-staging/.env`.
+4. Optional: a bucket lifecycle rule to delete objects older than e.g. 60 days.
+
 Manual backup:
 ```bash
 docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner' | gzip > backup.sql.gz
