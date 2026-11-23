@@ -1511,6 +1511,7 @@ export const LEVELS: Level[] = [
   }
 ];
 
+/** Shop prices: about 2–8 ordinary practice days per item (see COINS_PER_PRACTICE_DAY in src/lib/earning.ts). */
 export const SHOP_AVATARS: ShopItem[] = [
   {
     "id": "av_girl",
@@ -1522,31 +1523,31 @@ export const SHOP_AVATARS: ShopItem[] = [
     "id": "av_astro",
     "emoji": "👩‍🚀",
     "name": "אסטרונאוטית",
-    "cost": 40
+    "cost": 200
   },
   {
     "id": "av_fairy",
     "emoji": "🧚‍♀️",
     "name": "פיית מילים",
-    "cost": 60
+    "cost": 300
   },
   {
     "id": "av_hero",
     "emoji": "🦸‍♀️",
     "name": "גיבורת-על",
-    "cost": 90
+    "cost": 450
   },
   {
     "id": "av_queen",
     "emoji": "👸",
     "name": "מלכת האנגלית",
-    "cost": 120
+    "cost": 600
   },
   {
     "id": "av_robot",
     "emoji": "🤖",
     "name": "רובוט גאון",
-    "cost": 80
+    "cost": 400
   }
 ];
 
@@ -1561,31 +1562,31 @@ export const SHOP_PETS: ShopItem[] = [
     "id": "pet_cat",
     "emoji": "🐱",
     "name": "חתלתול",
-    "cost": 35
+    "cost": 175
   },
   {
     "id": "pet_uni",
     "emoji": "🦄",
     "name": "חד-קרן",
-    "cost": 75
+    "cost": 375
   },
   {
     "id": "pet_dragon",
     "emoji": "🐉",
     "name": "דרקון",
-    "cost": 100
+    "cost": 500
   },
   {
     "id": "pet_panda",
     "emoji": "🐼",
     "name": "פנדה",
-    "cost": 60
+    "cost": 300
   },
   {
     "id": "pet_owl",
     "emoji": "🦉",
     "name": "ינשוף חכם",
-    "cost": 85
+    "cost": 425
   }
 ];
 
@@ -1601,28 +1602,28 @@ export const SHOP_THEMES: ShopTheme[] = [
     "id": "theme-unicorn",
     "name": "חד-קרן ורוד",
     "icon": "🦄",
-    "cost": 50,
+    "cost": 250,
     "preview": "from-pink-500 to-purple-500"
   },
   {
     "id": "theme-ocean",
     "name": "אוקיינוס כחול",
     "icon": "🌊",
-    "cost": 50,
+    "cost": 250,
     "preview": "from-sky-500 to-teal-500"
   },
   {
     "id": "theme-space",
     "name": "חלל וכוכבים",
     "icon": "🌌",
-    "cost": 80,
+    "cost": 400,
     "preview": "from-slate-800 to-indigo-800"
   },
   {
     "id": "theme-neon",
     "name": "ניאון זוהר",
     "icon": "⚡",
-    "cost": 100,
+    "cost": 500,
     "preview": "from-fuchsia-600 to-emerald-500"
   }
 ];

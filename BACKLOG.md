@@ -16,6 +16,7 @@
 - Sight-words speed reading (PR #15)
 - Off-server copies of DB backups (PR #16)
 - Main game rewritten in React, `src/legacy` removed (PRs #17–#20)
+- Coin economy: learning pays once a day per item, tests only the first time, shop ×5, parent recompute; fix: game ignored completed levels (opened at level 1, no ✓ marks) (PR #21)
 
 Ideas and requests not built yet, roughly by priority. Move an item to a branch/PR when work starts.
 

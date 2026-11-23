@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { LEVELS } from '@/content/game';
+import { COINS } from '@/lib/earning';
 import { speakWord } from '@/lib/game-speech';
 import { useGame } from './GameContext';
 
@@ -23,13 +24,13 @@ export default function SentencesLevel() {
       const list = Array.isArray(d.readSentences) ? (d.readSentences as string[]) : [];
       return list.includes(id) ? d : { ...d, readSentences: [...list, id] };
     });
-    g.award(5, 'כל הכבוד על קריאת המשפט!');
+    g.award(COINS.sentence, 'כל הכבוד על קריאת המשפט!');
     if (total >= 6 && !g.list('completedLevels').map(Number).includes(7)) {
       g.mutate((d) => {
         const done = (Array.isArray(d.completedLevels) ? (d.completedLevels as number[]) : []).map(Number);
         return done.includes(7) ? d : { ...d, completedLevels: [...done, 7] };
       });
-      setTimeout(() => g.award(25, 'סיימת את שלב המשפטים!'), 50);
+      setTimeout(() => g.award(COINS.sentencesLevel, 'סיימת את שלב המשפטים!', { once: 'level:7' }), 50);
       g.confetti();
       g.sfx('fanfare');
     }
@@ -41,7 +42,7 @@ export default function SentencesLevel() {
         <div>
           <h3 className="text-xl font-black text-slate-800">📖 קוראים משפטים אמיתיים באנגלית!</h3>
           <p className="text-sm text-slate-500">
-            לחצי על כל מילה בנפרד אם את צריכה עזרה, או קראי בקול וסמני &quot;קראתי לבד!&quot; כדי להרוויח <strong className="text-amber-600">+5 🪙</strong> למשפט.
+            לחצי על כל מילה בנפרד אם את צריכה עזרה, או קראי בקול וסמני &quot;קראתי לבד!&quot; כדי להרוויח <strong className="text-amber-600">+{COINS.sentence} 🪙</strong> למשפט.
           </p>
         </div>
         <div className="bg-indigo-50 text-indigo-800 font-extrabold text-sm px-4 py-2 rounded-2xl shrink-0" data-testid="sentences-count">
@@ -79,7 +80,7 @@ export default function SentencesLevel() {
                   onClick={() => markRead(s.id)}
                   className={`${isRead ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-teal-600 hover:bg-teal-700 text-white'} font-extrabold text-xs sm:text-sm px-4 py-2 rounded-xl cursor-pointer transition active:scale-95`}
                 >
-                  {isRead ? '✓ קראתי!' : 'קראתי לבד! (+5 🪙)'}
+                  {isRead ? '✓ קראתי!' : `קראתי לבד! (+${COINS.sentence} 🪙)`}
                 </button>
               </div>
             </div>

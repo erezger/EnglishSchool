@@ -35,6 +35,11 @@ src/content/                             game content (game.ts = source of truth
 tests/api.test.mjs                       authorization & flow tests (run against a non-production server)
 ```
 
+Coins (`src/lib/earning.ts`, all amounts in `COINS`): learning pays per item **once a day** (practising again tomorrow pays again);
+tests, quizzes and challenges pay **only the first time**; no daily cap. Shop prices are ~2–8 practice days
+(`COINS_PER_PRACTICE_DAY` = 80, shown to parents next to their rewards). A parent can recompute a kid's balance under
+these rules from the parent area ("♻️ חישוב מחדש"); the kid sees it as a parent coin change.
+
 Progress sync: the game saves every action with the version it is based on. If the server copy changed
 meanwhile (e.g. a parent reset), the save is rejected (409) and the device adopts the server copy, so a
 reset is never silently undone. Other devices pick up changes within ~5s.

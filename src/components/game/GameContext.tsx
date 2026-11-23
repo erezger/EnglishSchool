@@ -3,12 +3,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ALL_WORDS, LEVELS, type Level } from '@/content/game';
 import { initGameVoices, onVoicesChanged, setSlowSpeech, stopGameSpeech } from '@/lib/game-speech';
+import { canEarnOnce, canEarnToday, COINS, payDaily, payOnce, withPaidOnce } from '@/lib/earning';
+import { todayStr } from '@/lib/review';
 import type { KidSettings } from '@/lib/modules';
 import { playSfx, type Sfx } from '@/lib/sfx';
 import { logActivity } from '@/lib/use-activity';
 import { useProgress, type ProgressData, type SaveStatus } from '@/lib/use-progress';
 
 export type Tab = 'learn' | 'blend' | 'spell' | 'quiz' | 'challenges';
+
+export type EarnRule = { daily?: string; once?: string };
 
 type Toast = { id: number; text: string; icon: string };
 type CoinPop = { id: number; amount: number };
@@ -23,7 +27,10 @@ type GameCtx = {
   mutate: (op: (d: ProgressData) => ProgressData) => void;
   flush: () => Promise<void>;
   refresh: () => Promise<void>;
-  award: (amount: number, message?: string) => void;
+  /** Pays coins. With `rule` it pays only if that key hasn't paid today (daily) / ever (once). Returns whether it paid. */
+  award: (amount: number, message?: string, rule?: EarnRule) => boolean;
+  /** Counts an answer for the parent report. */
+  answered: (correct: boolean) => void;
   recordMistake: (word: string) => void;
   markWordRead: (word: string, withReward?: boolean) => void;
   toast: (text: string, icon?: string) => void;
@@ -49,7 +56,9 @@ export const useGame = () => {
   return c;
 };
 
-const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+// completedLevels holds numbers; everything else strings — keep both, as strings
+const strings = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string | number => typeof x === 'string' || typeof x === 'number').map(String) : [];
 const utcToday = () => new Date().toISOString().slice(0, 10); // same "day" as the original game
 
 export function GameProvider({
@@ -83,20 +92,37 @@ export function GameProvider({
   }, []);
   const confetti = useCallback(() => setConfettiKey((k) => k + 1), []);
 
+  // latest data for the "would it pay?" checks + keys claimed since (before the next render)
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  const claimed = useRef(new Set<string>());
+
   const award = useCallback(
-    (amount: number, message?: string) => {
-      if (!amount || amount <= 0) return;
-      activity.current.answers++;
-      activity.current.correct++;
-      mutate((d) => ({ ...d, coins: (Number(d.coins) || 0) + amount }));
+    (amount: number, message?: string, rule?: EarnRule): boolean => {
+      const tag = rule?.daily ? `d:${todayStr()}:${rule.daily}` : rule?.once ? `o:${rule.once}` : null;
+      if (tag && claimed.current.has(tag)) return false;
+      if (rule?.daily && !canEarnToday(dataRef.current, rule.daily)) return false;
+      if (rule?.once && !canEarnOnce(dataRef.current, rule.once)) return false;
+      if (tag) claimed.current.add(tag);
+      // the op re-checks the rule, so a save re-applied after a conflict can't pay twice
+      if (rule?.daily) mutate((d) => payDaily(d, rule.daily!, amount));
+      else if (rule?.once) mutate((d) => payOnce(d, rule.once!, amount));
+      else if (amount > 0) mutate((d) => ({ ...d, coins: (Number(d.coins) || 0) + amount }));
+      if (!amount || amount <= 0) return true;
       sfx('coin');
       const id = ++seq.current;
       setCoinPops((p) => [...p, { id, amount }]);
       setTimeout(() => setCoinPops((p) => p.filter((x) => x.id !== id)), 1200);
       if (message) toast(`${message} (+${amount} 🪙)`, '🪙');
+      return true;
     },
     [mutate, sfx, toast],
   );
+
+  const answered = useCallback((correct: boolean) => {
+    activity.current.answers++;
+    if (correct) activity.current.correct++;
+  }, []);
 
   const recordMistake = useCallback(
     (word: string) => {
@@ -113,7 +139,7 @@ export function GameProvider({
       const w = word.toLowerCase();
       if (strings(data.readWords).includes(w)) return;
       mutate((d) => (strings(d.readWords).includes(w) ? d : { ...d, readWords: [...strings(d.readWords), w] }));
-      if (withReward) award(3, `קראת מילה חדשה: ${w}!`);
+      if (withReward) award(COINS.newWord, `קראת מילה חדשה: ${w}!`);
     },
     [data.readWords, mutate, award],
   );
@@ -166,6 +192,12 @@ export function GameProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // progress from before the "tests pay once" rule: mark the tests already finished as paid
+  useEffect(() => {
+    if (!Array.isArray(progress.data.paidOnce)) mutate(withPaidOnce);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // a parent reset / another device changed things
   useEffect(() => {
     if (remoteChanges > 0) toast('ההתקדמות עודכנה', '🔄');
@@ -202,6 +234,7 @@ export function GameProvider({
       flush,
       refresh,
       award,
+      answered,
       recordMistake,
       markWordRead,
       toast,
@@ -218,7 +251,7 @@ export function GameProvider({
       coinPops,
       confettiKey,
     }),
-    [user, settings, data, status, mutate, flush, refresh, award, recordMistake, markWordRead, toast, sfx, confetti, level, selectLevel, tab, setTab, modal, leave, toasts, coinPops, confettiKey],
+    [user, settings, data, status, mutate, flush, refresh, award, answered, recordMistake, markWordRead, toast, sfx, confetti, level, selectLevel, tab, setTab, modal, leave, toasts, coinPops, confettiKey],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

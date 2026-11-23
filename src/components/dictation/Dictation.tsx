@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { compareSentence, type WordResult } from '@/content/dictation';
 import { speak, stopSpeaking, warmUpVoices } from '@/lib/speech';
 import { useRoundActivity } from '@/lib/use-activity';
+import { payDaily } from '@/lib/earning';
+import { useEarnToday } from '@/lib/use-earn';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import { KidPanel, KidShell, ProgressDots } from '../kid/KidShell';
 
@@ -43,6 +45,7 @@ export default function Dictation({
   sources: DictationSource[];
 }) {
   const { data, mutate, flush, status } = useProgress(progress);
+  const earnToday = useEarnToday(data);
   const [source, setSource] = useState<DictationSource | null>(null);
   const [round, setRound] = useState<DictationItem[]>([]);
   const [index, setIndex] = useState(0);
@@ -59,13 +62,15 @@ export default function Dictation({
   }
 
   function record(item: DictationItem, wrong: number) {
-    const coins = wrong === 0 ? COINS_PERFECT : wrong === 1 ? COINS_ALMOST : 0;
+    // learning pays once a day per sentence
+    const payKey = `dict:${item.id}`;
+    const coins = earnToday(payKey, wrong === 0 ? COINS_PERFECT : wrong === 1 ? COINS_ALMOST : 0);
     setResults((r) => [...r, { id: item.id, wrong }]);
     mutate((d) => {
       const all = { ...statsOf(d) };
       const prev = all[item.id] ?? { c: 0, w: 0, t: 0 };
       all[item.id] = wrong === 0 ? { c: prev.c + 1, w: prev.w, t: Date.now() } : { c: prev.c, w: prev.w + 1, t: Date.now() };
-      return { ...d, coins: (Number(d.coins) || 0) + coins, dictationStats: all };
+      return payDaily({ ...d, dictationStats: all }, payKey, coins);
     });
     return coins;
   }
@@ -84,7 +89,7 @@ export default function Dictation({
       {!source && (
         <div className="space-y-3">
           <KidPanel className="!text-right !p-5">
-            <p className="text-slate-600 text-sm mb-4">שומעים משפט שלם ומקלידים אותו. משפט מושלם = {COINS_PERFECT} 🪙, טעות אחת = {COINS_ALMOST} 🪙.</p>
+            <p className="text-slate-600 text-sm mb-4">שומעים משפט שלם ומקלידים אותו. משפט מושלם = {COINS_PERFECT} 🪙, טעות אחת = {COINS_ALMOST} 🪙 (פעם ביום לכל משפט).</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {sources.map((s) => {
                 const done = s.items.filter((it) => (stats[it.id]?.c ?? 0) > 0).length;

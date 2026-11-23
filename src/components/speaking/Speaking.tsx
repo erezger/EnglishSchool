@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { heardTarget, listenOnce, recognitionSupported, stopListening } from '@/lib/speech-recognition';
 import { speak, stopSpeaking, warmUpVoices } from '@/lib/speech';
 import { useRoundActivity } from '@/lib/use-activity';
+import { payDaily } from '@/lib/earning';
+import { useEarnToday } from '@/lib/use-earn';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import { KidPanel, KidShell, ProgressDots } from '../kid/KidShell';
 
@@ -34,6 +36,8 @@ export default function Speaking({
   sources: SpeakSource[];
 }) {
   const { data, mutate, flush, status } = useProgress(progress);
+  const earnToday = useEarnToday(data);
+  const [earned, setEarned] = useState(0);
   const [supported, setSupported] = useState(true);
   const [source, setSource] = useState<SpeakSource | null>(null);
   const [round, setRound] = useState<SpeakWord[]>([]);
@@ -51,16 +55,21 @@ export default function Speaking({
     setRound(shuffle(src.words).slice(0, ROUND));
     setIndex(0);
     setResults([]);
+    setEarned(0);
   }
 
   function record(w: SpeakWord, ok: boolean, tries: number) {
     setResults((r) => [...r, ok]);
+    // learning pays once a day per word
+    const key = w.word.toLowerCase();
+    const payKey = `speak:${key}`;
+    const coins = ok ? earnToday(payKey, 1) : 0;
+    setEarned((e) => e + coins);
     mutate((d) => {
       const all = { ...statsOf(d) };
-      const key = w.word.toLowerCase();
       const prev = all[key] ?? { ok: 0, tries: 0, t: 0 };
       all[key] = { ok: prev.ok + (ok ? 1 : 0), tries: prev.tries + tries, t: Date.now() };
-      return { ...d, coins: (Number(d.coins) || 0) + (ok ? 1 : 0), speakingStats: all };
+      return payDaily({ ...d, speakingStats: all }, payKey, coins);
     });
   }
 
@@ -119,7 +128,7 @@ export default function Speaking({
           <h2 className="text-2xl font-black text-slate-800 mb-1">
             {results.filter(Boolean).length} מתוך {results.length} מילים נאמרו נכון
           </h2>
-          <div className="text-amber-700 font-black mb-5">+{results.filter(Boolean).length} 🪙</div>
+          <div className="text-amber-700 font-black mb-5">{earned > 0 ? `+${earned} 🪙` : 'על המילים האלה כבר קיבלת מטבעות היום 🌟'}</div>
           <div className="flex flex-wrap justify-center gap-2">
             <button onClick={() => source && start(source)} className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black cursor-pointer">
               🔄 עוד סבב
@@ -203,7 +212,7 @@ function WordCard({ word, onDone, onNext }: { word: SpeakWord; onDone: (ok: bool
           שמעתי: <span className="font-english" dir="ltr">&quot;{heard}&quot;</span> – נסו שוב ({MAX_TRIES - tries} ניסיונות) 💪
         </div>
       )}
-      {state === 'ok' && <div className="text-2xl font-black text-emerald-700 mb-3">מצוין! 🎉 +1 🪙</div>}
+      {state === 'ok' && <div className="text-2xl font-black text-emerald-700 mb-3">מצוין! 🎉</div>}
       {state === 'failed' && <div className="text-rose-700 font-bold mb-3">תקשיבו איך אומרים את זה, ובפעם הבאה זה יצליח 🙂</div>}
       {(state === 'ok' || state === 'failed') && (
         <button onClick={onNext} className="px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-md cursor-pointer">

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ALL_WORDS } from '@/content/game';
+import { canEarnOnce, COINS } from '@/lib/earning';
 import { speakPhonics, speakWord } from '@/lib/game-speech';
 import { useGame } from './GameContext';
 import QuizTab from './QuizTab';
@@ -22,6 +23,8 @@ const BD_POOL: BdQ[] = [
   { mode: 'match', target: 'p', upper: 'P', prompt: 'מצאי את האות הקטנה של:' },
   { mode: 'match', target: 'q', upper: 'Q', prompt: 'מצאי את האות הקטנה של:' },
 ];
+
+export const BD_KEY = 'bd';
 
 const shuffle = <T,>(arr: T[]): T[] => {
   const a = [...arr];
@@ -48,10 +51,10 @@ export default function ChallengesTab() {
             <div>
               <div className="inline-flex items-center gap-1.5 bg-rose-100 text-rose-800 text-xs font-extrabold px-3 py-1 rounded-full mb-1">
                 <span>🎯 בנק החיזוק האישי</span>
-                <span className="bg-amber-300 text-amber-950 px-2 py-0.5 rounded-full">2x מטבעות!</span>
+                <span className="bg-amber-300 text-amber-950 px-2 py-0.5 rounded-full">+{COINS.mistakeWord} 🪙 למילה</span>
               </div>
               <h3 className="text-xl font-black text-slate-800">מילים שמתאמנים עליהן עוד קצת</h3>
-              <p className="text-sm text-slate-600">כל מילה שטעית בה נשמרת כאן אוטומטית. כשתעני עליה נכון היא תיעלם מהבנק ותקבלי מטבעות כפולים!</p>
+              <p className="text-sm text-slate-600">כל מילה שטעית בה נשמרת כאן אוטומטית. כשתעני עליה נכון היא תיעלם מהבנק ותקבלי מטבעות!</p>
             </div>
             {mistakes.length > 0 && (
               <button
@@ -161,6 +164,7 @@ function BdGame() {
   const [questions, setQuestions] = useState<BdQ[] | null>(null);
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
+  const [paid, setPaid] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [options, setOptions] = useState<string[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -189,9 +193,10 @@ function BdGame() {
     setPicked(opt);
     const right = opt === q.target;
     const newScore = score + (right ? 1 : 0);
+    g.answered(right);
     if (right) {
       setScore(newScore);
-      g.award(3);
+      g.sfx('pop');
     } else g.sfx('wrong');
     timer.current = setTimeout(() => {
       if (index + 1 < (questions?.length ?? 0)) setIndex(index + 1);
@@ -204,17 +209,24 @@ function BdGame() {
     if (final >= 8) {
       g.sfx('fanfare');
       g.confetti();
-      g.award(15, 'אלופת ה-b/d/p/q!');
     }
+    // a challenge pays only the first time it is completed
+    const amount = final * COINS.bdPerCorrect + (final >= 8 ? COINS.bdChampion : 0);
+    setPaid(g.award(amount, final >= 8 ? 'אלופת ה-b/d/p/q!' : 'סיימת את האתגר!', { once: BD_KEY }) ? amount : 0);
     setIndex(10);
   }
+  const firstTime = canEarnOnce(g.data, BD_KEY);
 
   return (
     <div className="bg-white border-2 border-teal-100 rounded-2xl p-5 text-center" data-testid="bd-area">
       {!questions ? (
         <>
           <h4 className="text-lg font-extrabold text-slate-800 mb-1">⚡ אתגר 10 השאלות המהיר</h4>
-          <p className="text-xs sm:text-sm text-slate-500 mb-4">כל תשובה נכונה מזכה ב-3 מטבעות 🪙!</p>
+          <p className="text-xs sm:text-sm text-slate-500 mb-4" data-testid="bd-coins-note">
+            {firstTime
+              ? `בפעם הראשונה: ${COINS.bdPerCorrect} מטבעות על כל תשובה נכונה + ${COINS.bdChampion} בונוס על 8 ומעלה 🪙`
+              : 'על האתגר כבר קיבלת מטבעות – עכשיו משחקים לשבור את השיא האישי 🏆'}
+          </p>
           <button onClick={start} className="bg-gradient-to-l from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-extrabold px-7 py-3 rounded-2xl shadow-md cursor-pointer transition active:scale-95">
             🚀 התחילי אתגר b / d / p / q
           </button>
@@ -223,6 +235,7 @@ function BdGame() {
         <div className="py-3 animate-pop">
           <div className="text-5xl mb-2">{score >= 8 ? '👑' : '🌟'}</div>
           <h4 className="text-2xl font-black text-teal-900">סיימת עם {score} מתוך 10!</h4>
+          {paid > 0 && <div className="text-amber-700 font-black mt-1">+{paid} 🪙</div>}
           <button onClick={start} className="mt-4 bg-teal-600 hover:bg-teal-700 text-white font-extrabold px-6 py-2.5 rounded-2xl cursor-pointer">
             🔄 שחקי שוב
           </button>
@@ -264,7 +277,7 @@ function BdGame() {
           <div className="mt-3 min-h-[26px] text-sm font-bold">
             {picked &&
               (picked === q.target ? (
-                <span className="text-emerald-700">✨ בול! (+3 🪙)</span>
+                <span className="text-emerald-700">✨ בול!</span>
               ) : (
                 <span className="text-rose-600">
                   התשובה הנכונה: <strong className="en-text text-lg text-slate-900 mx-1">{q.target}</strong>

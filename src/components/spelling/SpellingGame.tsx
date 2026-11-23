@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gradeLabel, type BankTopic } from '@/content/wordbank';
 import { setPreferredVoice, speak, speakLetter, speechSupported, spellOut, stopSpeaking, warmUpVoices } from '@/lib/speech';
 import { useRoundActivity } from '@/lib/use-activity';
+import { payDaily } from '@/lib/earning';
+import { useEarnToday } from '@/lib/use-earn';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import type { WordList } from '@/lib/words';
 
@@ -120,6 +122,7 @@ export default function SpellingGame({
   bank: Record<number, BankTopic[]>;
 }) {
   const { data, mutate, flush, status } = useProgress(progress);
+  const earnToday = useEarnToday(data);
   const stats = statsOf(data);
   const coins = Number(data.coins) || 0;
   const muted = !!data.sfxMuted;
@@ -188,19 +191,21 @@ export default function SpellingGame({
 
   const onAnswered = useCallback(
     (item: RoundItem, correct: boolean, helped: boolean) => {
-      const reward = correct ? REWARD[item.mode][helped ? 'helped' : 'clean'] : 0;
+      // learning pays once a day per word
+      const payKey = `spell:${item.w.key}`;
+      const reward = correct ? earnToday(payKey, REWARD[item.mode][helped ? 'helped' : 'clean']) : 0;
       mutate((d) => {
         const all = { ...statsOf(d) };
         const prev = all[item.w.key] ?? { c: 0, w: 0, s: 0, t: 0 };
         all[item.w.key] = correct
           ? { c: prev.c + 1, w: prev.w, s: helped ? Math.max(prev.s, 1) : prev.s + 1, t: Date.now() }
           : { c: prev.c, w: prev.w + 1, s: 0, t: Date.now() };
-        return { ...d, coins: (Number(d.coins) || 0) + reward, spellingStats: all };
+        return payDaily({ ...d, spellingStats: all }, payKey, reward);
       });
       setResults((r) => [...r, { key: item.w.key, word: item.w.word, correct, coins: reward }]);
       return reward;
     },
-    [mutate],
+    [mutate, earnToday],
   );
 
   useRoundActivity('spell', round, screen === 'done', results.length, results.filter((r) => r.correct).length);

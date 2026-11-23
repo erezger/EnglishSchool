@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { LETTER_BANK } from '@/content/game';
 import { speakLetterName, speakPhonics, speakWord } from '@/lib/game-speech';
+import { COINS } from '@/lib/earning';
 import { useGame } from './GameContext';
 
 export default function LearnTab() {
@@ -18,7 +19,7 @@ export default function LearnTab() {
       const list = Array.isArray(d.learnedLetters) ? (d.learnedLetters as string[]) : [];
       return list.includes(key) ? d : { ...d, learnedLetters: [...list, key] };
     });
-    g.award(2, `כל הכבוד! למדת את האות ${key.toUpperCase()}`);
+    g.award(COINS.learnLetter, `כל הכבוד! למדת את האות ${key.toUpperCase()}`);
   }
 
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/lib/api-client';
 import type { StudentSummary } from './types';
 import { Btn, ErrorNote, Field, formatDate, Modal } from './ui';
@@ -23,7 +23,7 @@ export default function ChecksAndCoins({
   qs: string;
   onChanged: () => Promise<void>;
 }) {
-  const [dialog, setDialog] = useState<null | 'check' | 'coins'>(null);
+  const [dialog, setDialog] = useState<null | 'check' | 'coins' | 'recompute'>(null);
   const [error, setError] = useState<string | null>(null);
   const open = student.checks.find((c) => c.status === 'assigned' || c.status === 'in_progress');
   const nothingToCheck = student.checkable.letters + student.checkable.words + student.checkable.spelling === 0;
@@ -57,6 +57,7 @@ export default function ChecksAndCoins({
           </Btn>
         )}
         <Btn onClick={() => setDialog('coins')}>🪙 הוספה / הורדה של מטבעות</Btn>
+        <Btn onClick={() => setDialog('recompute')}>♻️ חישוב מחדש לפי הכללים החדשים</Btn>
       </div>
       {nothingToCheck && !open && <div className="text-[11px] text-slate-500 mb-2">עוד אין פריטים שסומנו כנלמדו – אין מה לבדוק.</div>}
 
@@ -112,6 +113,7 @@ export default function ChecksAndCoins({
 
       {dialog === 'check' && <SendCheckModal student={student} qs={qs} onClose={() => setDialog(null)} onDone={onChanged} />}
       {dialog === 'coins' && <CoinsModal student={student} qs={qs} onClose={() => setDialog(null)} onDone={onChanged} />}
+      {dialog === 'recompute' && <RecomputeModal student={student} qs={qs} onClose={() => setDialog(null)} onDone={onChanged} />}
     </div>
   );
 }
@@ -177,6 +179,91 @@ function SendCheckModal({ student, qs, onClose, onDone }: { student: StudentSumm
           </Btn>
         </div>
       </form>
+    </Modal>
+  );
+}
+
+type Estimate = { current: number; target: number; lines: { label: string; detail: string; coins: number }[] };
+
+/** Shows what the balance would be under the current coin rules, line by line; the parent can edit it before applying. */
+function RecomputeModal({ student, qs, onClose, onDone }: { student: StudentSummary; qs: string; onClose: () => void; onDone: () => Promise<void> }) {
+  const [estimate, setEstimate] = useState<Estimate | null>(null);
+  const [target, setTarget] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const url = `/api/family/students/${student.id}/recompute${qs}`;
+
+  useEffect(() => {
+    api<Estimate>(url)
+      .then((e) => {
+        setEstimate(e);
+        setTarget(String(e.target));
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'שגיאה'));
+  }, [url]);
+
+  const n = Number(target);
+  const delta = estimate ? n - estimate.current : 0;
+  return (
+    <Modal title={`חישוב מחדש של המטבעות של ${student.displayName}`} onClose={onClose}>
+      {!estimate ? (
+        error ? <ErrorNote message={error} /> : <div className="text-sm text-slate-500 py-6 text-center">מחשב...</div>
+      ) : (
+        <form
+          className="space-y-3"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError(null);
+            try {
+              await api(url, { method: 'POST', body: { target: n } });
+              await onDone();
+              onClose();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'שגיאה');
+              setBusy(false);
+            }
+          }}
+        >
+          <p className="text-xs text-slate-600">
+            לפי מה שנשמר על ההתקדמות: כל פריט למידה נספר פעם אחת וכל מבחן/חידון פעם אחת. משחקים שלא משאירים תיעוד (למשל בניית מילים) לא נספרים – אפשר לתקן את הסכום לפני האישור.
+          </p>
+          <table className="w-full text-sm" data-testid="recompute-lines">
+            <tbody>
+              {estimate.lines.map((l) => (
+                <tr key={l.label} className="border-b border-slate-100">
+                  <td className="py-1.5 font-bold text-slate-700">{l.label}</td>
+                  <td className="py-1.5 text-xs text-slate-500" dir="ltr">
+                    {l.detail}
+                  </td>
+                  <td className={`py-1.5 text-left font-black ${l.coins < 0 ? 'text-rose-700' : 'text-slate-800'}`} dir="ltr">
+                    {l.coins > 0 ? '+' : ''}
+                    {l.coins}
+                  </td>
+                </tr>
+              ))}
+              <tr>
+                <td className="pt-2 font-black text-slate-800">לפי הכללים החדשים</td>
+                <td />
+                <td className="pt-2 text-left font-black text-indigo-700" dir="ltr" data-testid="recompute-target">
+                  {estimate.target}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <Field label={`יתרה חדשה (כרגע ${estimate.current} 🪙)`} value={target} onChange={(e) => setTarget(e.target.value.replace(/\D/g, '').slice(0, 7))} inputMode="numeric" />
+          <div className="text-xs text-slate-600">
+            {delta === 0 ? 'אין שינוי ביתרה.' : `${student.displayName} תראה הודעה: ${delta > 0 ? '+' : ''}${delta} מטבעות – "עדכון לפי כללי המטבעות החדשים".`}
+          </div>
+          <ErrorNote message={error} />
+          <div className="flex gap-2 justify-end">
+            <Btn onClick={onClose}>ביטול</Btn>
+            <Btn type="submit" variant="primary" disabled={busy || target === ''}>
+              {busy ? 'שומר...' : 'אישור העדכון'}
+            </Btn>
+          </div>
+        </form>
+      )}
     </Modal>
   );
 }
