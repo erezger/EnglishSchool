@@ -154,7 +154,13 @@ export function summarize(data: ProgressData | undefined) {
     ...dictationSummary(data?.dictationStats),
     grammar: grammarSummary(data?.grammarStats),
     ...readingSummary(data?.readingStats),
+    ...speakingSummary(data?.speakingStats),
   };
+}
+
+function speakingSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { ok?: number }>) : [];
+  return { speakingTried: stats.length, speakingOk: stats.filter((s) => (s?.ok ?? 0) > 0).length };
 }
 
 function readingSummary(raw: unknown) {

@@ -9,6 +9,7 @@
 - Sentence dictation + practice hub (PR #8)
 - Grammar mini-games (PR #9)
 - Reading comprehension stories (PR #10)
+- Speaking practice with speech recognition (PR #11)
 
 Ideas and requests not built yet, roughly by priority. Move an item to a branch/PR when work starts.
 
@@ -18,7 +19,6 @@ Ideas and requests not built yet, roughly by priority. Move an item to a branch/
 ## Learning content
 
 - Sight-words track (the, said, because, friend…) as its own game modes (partly in the grade 4 bank).
-- Speaking: say the word into the mic (Chrome speech recognition) and get feedback.
 - More subjects later (content-driven, so a subject is mostly data, not code).
 
 ## Parents
