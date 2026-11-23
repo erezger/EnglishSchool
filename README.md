@@ -1,8 +1,8 @@
 # אנגלית בקליק PRO
 
 Next.js 16 + Postgres. Kids learn English phonics; parents/teachers manage kids, rewards and resets.
-The original Gemini single-file app (`code_artifact.html`) is kept for reference; its game UI runs
-unchanged from `src/legacy`.
+The original Gemini single-file app (`code_artifact.html`) is kept for reference; the game is a 1:1
+React rewrite of it (`src/components/game`), with all content in `src/content/game.ts`.
 
 ## Accounts & permissions
 
@@ -29,10 +29,16 @@ src/app/api/admin/families               admin: list/create families
 src/lib/migrations.ts                    append-only schema migrations (applied automatically at startup)
 src/lib/bootstrap.ts                     one-time import of pre-auth data + first admin from env
 src/lib/{session,http,family,rewards,progress,passwords}.ts
-src/components/                          LoginForm, parent dashboard, admin page, LegacyApp (game shell)
-src/legacy/                              original game markup + logic
+src/components/game/                     the main game (letters, blender, build-a-word, quiz, challenges, sentences, shop)
+src/components/{kid,parent,report}/      practice modules, parent dashboard, weekly report
+src/content/                             game content (game.ts = source of truth; phonics.ts derives from it), word bank, stories...
 tests/api.test.mjs                       authorization & flow tests (run against a non-production server)
 ```
+
+Coins (`src/lib/earning.ts`, all amounts in `COINS`): learning pays per item **once a day** (practising again tomorrow pays again);
+tests, quizzes and challenges pay **only the first time**; no daily cap. Shop prices are ~2–8 practice days
+(`COINS_PER_PRACTICE_DAY` = 80, shown to parents next to their rewards). A parent can recompute a kid's balance under
+these rules from the parent area ("♻️ חישוב מחדש"); the kid sees it as a parent coin change.
 
 Progress sync: the game saves every action with the version it is based on. If the server copy changed
 meanwhile (e.g. a parent reset), the save is rejected (409) and the device adopts the server copy, so a
@@ -76,6 +82,14 @@ nginx: see `deploy/nginx.conf.example` (proxy to 127.0.0.1:APP_PORT, keep the X-
 - Every deploy (GitHub Actions) first dumps the DB to `~/backups/<env>/<date>_<commit>.sql.gz`
   (last 14 kept). If the backup fails, the deploy is aborted.
 
+Off-server copy (recommended): set `BACKUP_UPLOAD_URL` in the server `.env` and every deploy also uploads the
+backup to Oracle Object Storage (`<env>/<file>.sql.gz`). If the upload fails the deploy still continues.
+1. OCI Console → Object Storage → create a bucket (e.g. `school-backups`, private).
+2. Bucket → Pre-Authenticated Requests → Create: target "Objects with prefix" (empty prefix),
+   access "Permit object writes", pick an expiry (e.g. 1 year — renew it before it expires).
+3. Copy the URL (it ends with `/o/`) into `BACKUP_UPLOAD_URL=` in `~/school/.env` and `~/school-staging/.env`.
+4. Optional: a bucket lifecycle rule to delete objects older than e.g. 60 days.
+
 Manual backup:
 ```bash
 docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner' | gzip > backup.sql.gz
@@ -96,5 +110,5 @@ npm install
 cp .env.example .env            # same password in POSTGRES_PASSWORD and DATABASE_URL; COOKIE_SECURE=false
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db   # Postgres on 127.0.0.1:5433
 npm run dev                     # http://localhost:3000
-npm test                        # with the app running; uses BASE_URL / ADMIN_USERNAME / ADMIN_PASSWORD
+npm test                        # app running with LOGIN_IP_LIMIT=1000; uses BASE_URL / ADMIN_USERNAME / ADMIN_PASSWORD
 ```

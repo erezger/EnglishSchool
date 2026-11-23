@@ -16,8 +16,40 @@ export type StudentSummary = {
     mistakes: number;
     equippedAvatar: string;
     equippedPet: string;
+    spellingPracticed: number;
+    spellingKnown: number;
+    spellingWeak: number;
+    reviewLast: string | null;
+    reviewStreak: number;
+    reviewTracked: number;
+    reviewDue: number;
+    reviewMastered: number;
+    placement: { date: string; passedThrough: number } | null;
+    dictationTried: number;
+    dictationPerfect: number;
+    grammar: Record<string, number>;
+    storiesRead: number;
+    storiesAvg: number;
+    speakingTried: number;
+    speakingOk: number;
+    sightSeen: number;
+    sightKnown: number;
   };
+  grade: number | null;
+  settings: { disabledModules: string[]; dailyGoalMinutes: number };
   rewards: { id: string; title: string; cost: number }[];
+  checks: {
+    id: string;
+    status: string;
+    total: number;
+    score: number | null;
+    coinsAwarded: number | null;
+    createdAt: string;
+    finishedAt: string | null;
+    failed: string[];
+  }[];
+  coinAdjustments: { amount: number; reason: string; createdAt: string; seen: boolean }[];
+  checkable: { letters: number; words: number; spelling: number };
 };
 
 export type Guardian = {

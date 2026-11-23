@@ -14,7 +14,11 @@ export type AuditAction =
   | 'redemption.request'
   | 'redemption.fulfill'
   | 'redemption.cancel'
-  | 'family.create';
+  | 'family.create'
+  | 'wordlist.delete'
+  | 'coins.adjust'
+  | 'coins.recompute'
+  | 'coins.suspicious';
 
 export async function audit(
   actorId: string | null,

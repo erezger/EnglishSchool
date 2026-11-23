@@ -1,6 +1,9 @@
 import type { NextRequest } from 'next/server';
 import type { PoolClient } from 'pg';
 import { audit } from './audit';
+import { availableToCheck, recentAdjustments, recentChecks } from './checks';
+import { isUuid } from './ids';
+import { cleanSettings } from './modules';
 import { query, withTransaction } from './db';
 import { HttpError, requireUser } from './http';
 import {
@@ -46,9 +49,7 @@ export async function assertFamilyExists(familyId: string): Promise<void> {
   if (!rows[0]) throw new HttpError(404, 'not_found', 'המשפחה לא נמצאה');
 }
 
-export function isUuid(v: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-}
+export { isUuid } from './ids';
 
 type MemberRow = {
   id: string;
@@ -101,6 +102,14 @@ function requireUsername(raw: unknown): string {
   return username;
 }
 
+/** Grade 1-12, or null for "not set". */
+export function cleanGrade(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const g = Number(raw);
+  if (!Number.isInteger(g) || g < 1 || g > 12) throw new HttpError(400, 'invalid_grade', 'כיתה לא תקינה');
+  return g;
+}
+
 function requireDisplayName(raw: unknown): string {
   const name = cleanDisplayName(raw);
   if (!name) throw new HttpError(400, 'invalid_name', 'שם תצוגה: 1-40 תווים');
@@ -115,13 +124,15 @@ export async function getFamilyOverview(familyId: string) {
     query<
       MemberRow & {
         has_secret: boolean;
+        grade: number | null;
+        settings: unknown;
         last_login_at: Date | null;
         locked_until: Date | null;
         data: ProgressData | null;
       }
     >(
       `SELECT u.id, u.role, u.username, u.display_name, u.family_id,
-              u.secret_hash IS NOT NULL AS has_secret, u.last_login_at, u.locked_until, p.data
+              u.secret_hash IS NOT NULL AS has_secret, u.grade, u.settings, u.last_login_at, u.locked_until, p.data
          FROM users u LEFT JOIN student_progress p ON p.user_id = u.id
         WHERE u.family_id = $1
         ORDER BY u.role DESC, u.created_at`,
@@ -152,7 +163,12 @@ export async function getFamilyOverview(familyId: string) {
   ]);
   if (!family.rows[0]) throw new HttpError(404, 'not_found', 'המשפחה לא נמצאה');
 
+  const [checks, adjustments] = await Promise.all([recentChecks(familyId), recentAdjustments(familyId)]);
   const now = Date.now();
+  const studentRows = members.rows.filter((m) => m.role === 'student');
+  const checkable = new Map(
+    await Promise.all(studentRows.map(async (m) => [m.id, await availableToCheck(familyId, m.data ?? {})] as const)),
+  );
   const students = members.rows
     .filter((m) => m.role === 'student')
     .map((m) => ({
@@ -160,10 +176,15 @@ export async function getFamilyOverview(familyId: string) {
       username: m.username,
       displayName: m.display_name,
       hasPin: m.has_secret,
+      grade: m.grade,
+      settings: cleanSettings(m.settings),
       locked: !!m.locked_until && new Date(m.locked_until).getTime() > now,
       lastLoginAt: m.last_login_at?.toISOString() ?? null,
       progress: summarize(m.data ?? undefined),
       rewards: rewards.rows.filter((r) => r.student_id === m.id).map(({ id, title, cost }) => ({ id, title, cost })),
+      checks: checks.get(m.id) ?? [],
+      coinAdjustments: adjustments.get(m.id) ?? [],
+      checkable: checkable.get(m.id) ?? { letters: 0, words: 0, spelling: 0 },
     }));
   const guardians = members.rows
     .filter((m) => m.role !== 'student')
@@ -200,9 +221,9 @@ export async function createStudent(actor: SessionUser, familyId: string, body: 
   try {
     return await withTransaction(async (client) => {
       const { rows } = await client.query<{ id: string }>(
-        `INSERT INTO users (family_id, role, username, display_name, secret_hash)
-         VALUES ($1, 'student', $2, $3, $4) RETURNING id`,
-        [familyId, username, displayName, secretHash],
+        `INSERT INTO users (family_id, role, username, display_name, secret_hash, grade)
+         VALUES ($1, 'student', $2, $3, $4, $5) RETURNING id`,
+        [familyId, username, displayName, secretHash, cleanGrade(body.grade)],
       );
       const id = rows[0].id;
       await insertProgress(
@@ -254,10 +275,19 @@ export async function createGuardian(
   }
 }
 
-export async function renameMember(actor: SessionUser, member: MemberRow, body: Record<string, unknown>) {
-  const displayName = requireDisplayName(body.displayName);
-  await query('UPDATE users SET display_name = $2 WHERE id = $1', [member.id, displayName]);
-  await audit(actor.id, 'user.update', member.id, { displayName });
+/** Update a kid's display name and/or grade. */
+export async function updateStudent(actor: SessionUser, member: MemberRow, body: Record<string, unknown>) {
+  const displayName = body.displayName === undefined ? null : requireDisplayName(body.displayName);
+  const setGrade = body.grade !== undefined;
+  const settings = body.settings === undefined ? null : JSON.stringify(cleanSettings(body.settings));
+  const grade = setGrade ? cleanGrade(body.grade) : null;
+  await query(
+    `UPDATE users SET display_name = COALESCE($2, display_name), grade = CASE WHEN $3 THEN $4::smallint ELSE grade END,
+            settings = COALESCE($5::jsonb, settings)
+      WHERE id = $1`,
+    [member.id, displayName, setGrade, grade, settings],
+  );
+  await audit(actor.id, 'user.update', member.id, { displayName, grade, settings: settings ? JSON.parse(settings) : undefined });
 }
 
 export async function setStudentPin(actor: SessionUser, student: MemberRow, pin: unknown) {

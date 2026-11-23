@@ -1,0 +1,1631 @@
+/**
+ * Full content of the game: letters (name, sound, trick, example, bonus), the 7 levels
+ * (words with sound parts, sentences) and the shop catalog.
+ * This is the source of truth for the game content — edit it by hand (src/content/phonics.ts derives from it).
+ */
+export type LetterInfo = {
+  upper: string;
+  lower: string;
+  hebrewName: string;
+  ttsLetterName: string;
+  hebrewSound: string;
+  trick: string;
+  phoneme: string;
+  exampleWord: string;
+  exampleEmoji: string;
+  exampleHebrew: string;
+  bonus?: { title: string; desc: string; word: string; emoji: string; hebrew: string };
+};
+export type LevelWord = { word: string; parts: string[]; hebrew: string; emoji: string };
+export type LevelSentence = { id: string; text: string; hebrew: string; emoji: string };
+export type Level = {
+  id: number;
+  shortName: string;
+  title: string;
+  letters: string[];
+  words: LevelWord[];
+  isSentenceLevel?: boolean;
+  sentences?: LevelSentence[];
+};
+export type ShopItem = { id: string; emoji: string; name: string; cost: number };
+export type ShopTheme = { id: string; name: string; icon: string; cost: number; preview: string };
+
+export const LETTER_BANK: Record<string, LetterInfo> = {
+  "a": {
+    "upper": "A",
+    "lower": "a",
+    "hebrewName": "אֵיי",
+    "ttsLetterName": "Ay",
+    "hebrewSound": "אַה (כמו אֲבא)",
+    "trick": "האות a נראית כמו תפוח קטן (Apple) עם עלה למעלה 🍎",
+    "phoneme": "ah",
+    "exampleWord": "apple",
+    "exampleEmoji": "🍎",
+    "exampleHebrew": "תפוח",
+    "bonus": {
+      "title": "צליל ארוך (אֵיי) – קסם ה-e!",
+      "desc": "כשיש e בסוף המילה, האות a אומרת את השם שלה: אֵיי! כמו במילה cake (עוגה).",
+      "word": "cake",
+      "emoji": "🎂",
+      "hebrew": "עוגה"
+    }
+  },
+  "b": {
+    "upper": "B",
+    "lower": "b",
+    "hebrewName": "בִּי",
+    "ttsLetterName": "Bee",
+    "hebrewSound": "בּ (כמו בּלון)",
+    "trick": "זוכרת את המיטה (bed)? ל-b יש מקל בצד שמאל ובטן קדימה 🛏️",
+    "phoneme": "buh",
+    "exampleWord": "bat",
+    "exampleEmoji": "🦇",
+    "exampleHebrew": "עטלף"
+  },
+  "s": {
+    "upper": "S",
+    "lower": "s",
+    "hebrewName": "אֶס",
+    "ttsLetterName": "Ess",
+    "hebrewSound": "ססס (כמו נחש)",
+    "trick": "האות S מתפתלת בדיוק כמו נחש (Snake) שעושה ססס! 🐍",
+    "phoneme": "sss",
+    "exampleWord": "sun",
+    "exampleEmoji": "☀️",
+    "exampleHebrew": "שמש",
+    "bonus": {
+      "title": "לפעמים נשמעת כמו ז (z)",
+      "desc": "בסוף מילים רבות או בין תנועות, s יכולה להישמע כמו ז, למשל במילה rose (ורד).",
+      "word": "rose",
+      "emoji": "🌹",
+      "hebrew": "ורד"
+    }
+  },
+  "t": {
+    "upper": "T",
+    "lower": "t",
+    "hebrewName": "טִי",
+    "ttsLetterName": "Tee",
+    "hebrewSound": "ט (כמו טלפון)",
+    "trick": "האות t נראית כמו ברז (Tap) שמוציא מים: ט-ט-ט 🚰",
+    "phoneme": "tuh",
+    "exampleWord": "tap",
+    "exampleEmoji": "🚰",
+    "exampleHebrew": "ברז"
+  },
+  "p": {
+    "upper": "P",
+    "lower": "p",
+    "hebrewName": "פִּי",
+    "ttsLetterName": "Pee",
+    "hebrewSound": "פּ (כמו פּיצה)",
+    "trick": "הראש של p מסתכל קדימה לכיוון הפיצה (Pizza) 🍕",
+    "phoneme": "puh",
+    "exampleWord": "pat",
+    "exampleEmoji": "✋",
+    "exampleHebrew": "ליטוף"
+  },
+  "i": {
+    "upper": "I",
+    "lower": "i",
+    "hebrewName": "אַיי",
+    "ttsLetterName": "Eye",
+    "hebrewSound": "אִי קצר (כמו אִיגלו)",
+    "trick": "האות i היא ילד קטן עם כדור קטן מעל הראש 🧊",
+    "phoneme": "ih",
+    "exampleWord": "igloo",
+    "exampleEmoji": "🧊",
+    "exampleHebrew": "איגלו",
+    "bonus": {
+      "title": "צליל ארוך (אַיי) – קסם ה-e!",
+      "desc": "כשיש e בסוף המילה, האות i אומרת אַיי! כמו במילה bike (אופניים).",
+      "word": "bike",
+      "emoji": "🚲",
+      "hebrew": "אופניים"
+    }
+  },
+  "n": {
+    "upper": "N",
+    "lower": "n",
+    "hebrewName": "אֶן",
+    "ttsLetterName": "En",
+    "hebrewSound": "נננ (כמו נמר)",
+    "trick": "האות n נראית כמו גשר קטן או רשת (Net) עם קשת אחת 🌉",
+    "phoneme": "nnn",
+    "exampleWord": "net",
+    "exampleEmoji": "🥅",
+    "exampleHebrew": "רשת"
+  },
+  "m": {
+    "upper": "M",
+    "lower": "m",
+    "hebrewName": "אֶם",
+    "ttsLetterName": "Em",
+    "hebrewSound": "מממ (כמו ממתק)",
+    "trick": "ל-m יש שתי קשתות כמו שני הרים (Mountains) – מממ טעים! ⛰️",
+    "phoneme": "mmm",
+    "exampleWord": "map",
+    "exampleEmoji": "🗺️",
+    "exampleHebrew": "מפה"
+  },
+  "d": {
+    "upper": "D",
+    "lower": "d",
+    "hebrewName": "דִי",
+    "ttsLetterName": "Dee",
+    "hebrewSound": "ד (כמו דג)",
+    "trick": "בטריק המיטה (bed), האות d נמצאת בצד ימין עם מקל בסוף 🐶",
+    "phoneme": "duh",
+    "exampleWord": "dog",
+    "exampleEmoji": "🐶",
+    "exampleHebrew": "כלב"
+  },
+  "g": {
+    "upper": "G",
+    "lower": "g",
+    "hebrewName": "גִ'י",
+    "ttsLetterName": "Jee",
+    "hebrewSound": "ג (כמו גלידה)",
+    "trick": "ל-g יש זנב מעוגל למטה כמו ידית של ספל או זנב של חתול 🎁",
+    "phoneme": "guh",
+    "exampleWord": "gift",
+    "exampleEmoji": "🎁",
+    "exampleHebrew": "מתנה",
+    "bonus": {
+      "title": "צליל רך (ג') לפני e / i / y",
+      "desc": "לפני האותיות e, i, y האות g לפעמים נשמעת כמו ג', למשל giraffe (ג'ירפה).",
+      "word": "giraffe",
+      "emoji": "🦒",
+      "hebrew": "ג'ירפה"
+    }
+  },
+  "o": {
+    "upper": "O",
+    "lower": "o",
+    "hebrewName": "אוֹאוּ",
+    "ttsLetterName": "Oh",
+    "hebrewSound": "אוֹ קצר (כמו אוֹר)",
+    "trick": "הפה נהיה עגול בדיוק כמו האות O כשאומרים אוֹ! 😮",
+    "phoneme": "aw",
+    "exampleWord": "octopus",
+    "exampleEmoji": "🐙",
+    "exampleHebrew": "תמנון",
+    "bonus": {
+      "title": "צליל ארוך (אוֹאוּ) – קסם ה-e!",
+      "desc": "כשיש e בסוף המילה, האות o אומרת את השם שלה: אוֹאוּ! כמו במילה home (בית).",
+      "word": "home",
+      "emoji": "🏠",
+      "hebrew": "בית"
+    }
+  },
+  "c": {
+    "upper": "C",
+    "lower": "c",
+    "hebrewName": "סִי",
+    "ttsLetterName": "See",
+    "hebrewSound": "ק (כמו קפה)",
+    "trick": "האות c נראית כמו עוגייה (Cookie) שמישהו נתן בה ביס 🍪",
+    "phoneme": "kuh",
+    "exampleWord": "cat",
+    "exampleEmoji": "🐱",
+    "exampleHebrew": "חתול",
+    "bonus": {
+      "title": "צליל ס' לפני e / i / y",
+      "desc": "כשאחרי c מגיעות האותיות e, i או y, היא נשמעת כמו ס'! למשל city (עיר).",
+      "word": "city",
+      "emoji": "🏙️",
+      "hebrew": "עיר"
+    }
+  },
+  "k": {
+    "upper": "K",
+    "lower": "k",
+    "hebrewName": "קֵיי",
+    "ttsLetterName": "Kay",
+    "hebrewSound": "ק (כמו קנגורו)",
+    "trick": "האות k מרימה רגל בבעיטה (Kick) – צליל ק חזק! 🦘",
+    "phoneme": "kuh",
+    "exampleWord": "kid",
+    "exampleEmoji": "🧒",
+    "exampleHebrew": "ילד"
+  },
+  "e": {
+    "upper": "E",
+    "lower": "e",
+    "hebrewName": "אִי",
+    "ttsLetterName": "Ee",
+    "hebrewSound": "אֶה (כמו אֶגוז)",
+    "trick": "האות e נראית כמו ביצה (Egg) שנשברה קצת באמצע 🥚",
+    "phoneme": "eh",
+    "exampleWord": "egg",
+    "exampleEmoji": "🥚",
+    "exampleHebrew": "ביצה",
+    "bonus": {
+      "title": "צליל ארוך (אִי) כמו במילה me",
+      "desc": "במילים קצרות שמסתיימות ב-e או כשיש ee, שומעים אִי ארוך! למשל me (אותי/אני).",
+      "word": "me",
+      "emoji": "🙋‍♀️",
+      "hebrew": "אני / אותי"
+    }
+  },
+  "r": {
+    "upper": "R",
+    "lower": "r",
+    "hebrewName": "אָאר",
+    "ttsLetterName": "Are",
+    "hebrewSound": "ררר (רכה, כמו רדיו)",
+    "trick": "האות r היא כמו כלבלב קטן שנוהם בעדינות ררר (Run!) 🏃",
+    "phoneme": "rrr",
+    "exampleWord": "red",
+    "exampleEmoji": "🔴",
+    "exampleHebrew": "אדום"
+  },
+  "h": {
+    "upper": "H",
+    "lower": "h",
+    "hebrewName": "אֵייץ'",
+    "ttsLetterName": "Aitch",
+    "hebrewSound": "ה (נשיפה רכה, כמו הר)",
+    "trick": "האות h נראית כמו כיסא שיושבים עליו אחרי ריצה ונושפים ההה 🪑",
+    "phoneme": "huh",
+    "exampleWord": "hat",
+    "exampleEmoji": "🎩",
+    "exampleHebrew": "כובע"
+  },
+  "l": {
+    "upper": "L",
+    "lower": "l",
+    "hebrewName": "אֶל",
+    "ttsLetterName": "Ell",
+    "hebrewSound": "ללל (כמו לימון)",
+    "trick": "האות l היא מקל ארוך וישר כמו סוכרייה על מקל (Lollipop) 🍭",
+    "phoneme": "lll",
+    "exampleWord": "leg",
+    "exampleEmoji": "🦵",
+    "exampleHebrew": "רגל"
+  },
+  "f": {
+    "upper": "F",
+    "lower": "f",
+    "hebrewName": "אֶף",
+    "ttsLetterName": "Eff",
+    "hebrewSound": "פפפ רפה (כמו פרח)",
+    "trick": "האות f נראית כמו פרח גבוה (Flower) שמתכופף ברוח 🌸",
+    "phoneme": "fff",
+    "exampleWord": "fan",
+    "exampleEmoji": "🪭",
+    "exampleHebrew": "מאוורר"
+  },
+  "u": {
+    "upper": "U",
+    "lower": "u",
+    "hebrewName": "יוּ",
+    "ttsLetterName": "You",
+    "hebrewSound": "אַה קצר (כמו אַף)",
+    "trick": "האות u נראית כמו כוס (Cup) או ידית של מטרייה (Umbrella) ☂️",
+    "phoneme": "uh",
+    "exampleWord": "sun",
+    "exampleEmoji": "☀️",
+    "exampleHebrew": "שמש",
+    "bonus": {
+      "title": "צליל ארוך (יוּ) – קסם ה-e!",
+      "desc": "כשיש e בסוף המילה, האות u אומרת את השם שלה: יוּ! כמו במילה cute (חמוד).",
+      "word": "cute",
+      "emoji": "🥰",
+      "hebrew": "חמוד"
+    }
+  },
+  "w": {
+    "upper": "W",
+    "lower": "w",
+    "hebrewName": "דַאבֶּל-יוּ",
+    "ttsLetterName": "Double you",
+    "hebrewSound": "ווּ (כמו וואו!)",
+    "trick": "האות w היא כמו שני גלים בים (Water) – אומרים ווּ עם שפתיים עגולות 🌊",
+    "phoneme": "wuh",
+    "exampleWord": "win",
+    "exampleEmoji": "🏆",
+    "exampleHebrew": "לנצח"
+  },
+  "j": {
+    "upper": "J",
+    "lower": "j",
+    "hebrewName": "ג'ֵיי",
+    "ttsLetterName": "Jay",
+    "hebrewSound": "ג' (כמו ג'ינס)",
+    "trick": "האות j קופצת (Jump) ויש לה נקודה מעל הראש 🍓",
+    "phoneme": "juh",
+    "exampleWord": "jam",
+    "exampleEmoji": "🍓",
+    "exampleHebrew": "ריבה"
+  },
+  "v": {
+    "upper": "V",
+    "lower": "v",
+    "hebrewName": "וִי",
+    "ttsLetterName": "Vee",
+    "hebrewSound": "וְוְוְ (כמו ורד)",
+    "trick": "האות v חדה כמו חרטום של ואן (Van) ומרגישים רטט בשפה 🚐",
+    "phoneme": "vvv",
+    "exampleWord": "van",
+    "exampleEmoji": "🚐",
+    "exampleHebrew": "ואן"
+  },
+  "y": {
+    "upper": "Y",
+    "lower": "y",
+    "hebrewName": "וַואי",
+    "ttsLetterName": "Why",
+    "hebrewSound": "יְ (כמו יד)",
+    "trick": "האות y מרימה ידיים למעלה ואומרת YES! ✅",
+    "phoneme": "yuh",
+    "exampleWord": "yes",
+    "exampleEmoji": "✅",
+    "exampleHebrew": "כן",
+    "bonus": {
+      "title": "בסוף מילה נשמעת אִי או אַיי",
+      "desc": "בסוף מילה ארוכה y נשמעת אִי (happy – שמח), ובמילה קצרה אַיי (sky – שמיים).",
+      "word": "happy",
+      "emoji": "😊",
+      "hebrew": "שמח"
+    }
+  },
+  "z": {
+    "upper": "Z",
+    "lower": "z",
+    "hebrewName": "זִי",
+    "ttsLetterName": "Zee",
+    "hebrewSound": "זזז (כמו זבוב)",
+    "trick": "האות z נראית כמו זיגזג של רוכסן (Zip) ⚡",
+    "phoneme": "zzz",
+    "exampleWord": "zip",
+    "exampleEmoji": "🤐",
+    "exampleHebrew": "רוכסן"
+  },
+  "x": {
+    "upper": "X",
+    "lower": "x",
+    "hebrewName": "אֶקס",
+    "ttsLetterName": "Ex",
+    "hebrewSound": "קס (כמו בוקס)",
+    "trick": "האות x היא איקס של תיבת אוצר (Box) ונשמעת כמו ק+ס 📦",
+    "phoneme": "ks",
+    "exampleWord": "box",
+    "exampleEmoji": "📦",
+    "exampleHebrew": "קופסה"
+  },
+  "q": {
+    "upper": "Q",
+    "lower": "q",
+    "hebrewName": "קְיוּ",
+    "ttsLetterName": "Cue",
+    "hebrewSound": "קוו (כמו Queen)",
+    "trick": "המלכה q תמיד מסתכלת אחורה ואוהבת שהאות u הולכת איתה 👑",
+    "phoneme": "kwuh",
+    "exampleWord": "queen",
+    "exampleEmoji": "👑",
+    "exampleHebrew": "מלכה"
+  },
+  "sh": {
+    "upper": "SH",
+    "lower": "sh",
+    "hebrewName": "אֶס + אֵייץ'",
+    "ttsLetterName": "Ess Aitch",
+    "hebrewSound": "ששש (שקט!)",
+    "trick": "כש-s ו-h ביחד, הן שמות אצבע על הפה ואומרות ששש! 🤫",
+    "phoneme": "shhh",
+    "exampleWord": "ship",
+    "exampleEmoji": "🚢",
+    "exampleHebrew": "אונייה"
+  },
+  "ch": {
+    "upper": "CH",
+    "lower": "ch",
+    "hebrewName": "סִי + אֵייץ'",
+    "ttsLetterName": "See Aitch",
+    "hebrewSound": "צ' (כמו צ'יפס)",
+    "trick": "הצירוף ch נשמע כמו אפצ'י או כמו צ'יפס פריך! 🍟",
+    "phoneme": "chuh",
+    "exampleWord": "chip",
+    "exampleEmoji": "🍟",
+    "exampleHebrew": "צ'יפס"
+  },
+  "th": {
+    "upper": "TH",
+    "lower": "th",
+    "hebrewName": "טִי + אֵייץ'",
+    "ttsLetterName": "Tee Aitch",
+    "hebrewSound": "ת' (לשון בין השיניים)",
+    "trick": "מוציאים קצה קטן של הלשון בין השיניים ונושפים בעדינות 👅",
+    "phoneme": "thhh",
+    "exampleWord": "thin",
+    "exampleEmoji": "📏",
+    "exampleHebrew": "דק"
+  },
+  "ck": {
+    "upper": "CK",
+    "lower": "ck",
+    "hebrewName": "סִי + קֵיי",
+    "ttsLetterName": "See Kay",
+    "hebrewSound": "ק חזקה (בסוף מילה)",
+    "trick": "החברות c ו-k אוהבות לעמוד בסוף מילה ולעשות יחד צליל ק אחד חזק! 🦆",
+    "phoneme": "kuh",
+    "exampleWord": "duck",
+    "exampleEmoji": "🦆",
+    "exampleHebrew": "ברווז"
+  },
+  "ee": {
+    "upper": "EE",
+    "lower": "ee",
+    "hebrewName": "דַאבֶּל אִי",
+    "ttsLetterName": "Double Ee",
+    "hebrewSound": "אִי ארוך (כמו עץ)",
+    "trick": "שתי אותיות e תאומות שרות יחד אִיייי ארוך כמו דבורה (bee)! 🐝",
+    "phoneme": "eee",
+    "exampleWord": "tree",
+    "exampleEmoji": "🌳",
+    "exampleHebrew": "עץ"
+  },
+  "oo": {
+    "upper": "OO",
+    "lower": "oo",
+    "hebrewName": "דַאבֶּל אוֹאוּ",
+    "ttsLetterName": "Double Oh",
+    "hebrewSound": "אוּ (כמו ירח)",
+    "trick": "שני עיגולים כמו משקפת שמסתכלים בה על הירח (moon) ואומרים אוּוּ! 🌙",
+    "phoneme": "ooo",
+    "exampleWord": "moon",
+    "exampleEmoji": "🌙",
+    "exampleHebrew": "ירח",
+    "bonus": {
+      "title": "אוּ קצר (כמו בספר – book)",
+      "desc": "לפעמים oo נשמעת קצרה ורכה יותר, כמו במילה book (ספר) או foot (כף רגל).",
+      "word": "book",
+      "emoji": "📖",
+      "hebrew": "ספר"
+    }
+  }
+};
+
+export const LEVELS: Level[] = [
+  {
+    "id": 1,
+    "shortName": "שלב 1",
+    "title": "מתחילים לקרוא!",
+    "letters": [
+      "a",
+      "b",
+      "s",
+      "t",
+      "p"
+    ],
+    "words": [
+      {
+        "word": "bat",
+        "parts": [
+          "b",
+          "a",
+          "t"
+        ],
+        "hebrew": "עטלף",
+        "emoji": "🦇"
+      },
+      {
+        "word": "sat",
+        "parts": [
+          "s",
+          "a",
+          "t"
+        ],
+        "hebrew": "ישב",
+        "emoji": "🪑"
+      },
+      {
+        "word": "pat",
+        "parts": [
+          "p",
+          "a",
+          "t"
+        ],
+        "hebrew": "ליטוף",
+        "emoji": "✋"
+      },
+      {
+        "word": "tap",
+        "parts": [
+          "t",
+          "a",
+          "p"
+        ],
+        "hebrew": "ברז",
+        "emoji": "🚰"
+      },
+      {
+        "word": "tab",
+        "parts": [
+          "t",
+          "a",
+          "b"
+        ],
+        "hebrew": "לשונית",
+        "emoji": "🏷️"
+      },
+      {
+        "word": "sap",
+        "parts": [
+          "s",
+          "a",
+          "p"
+        ],
+        "hebrew": "שרף עץ",
+        "emoji": "🌳"
+      },
+      {
+        "word": "at",
+        "parts": [
+          "a",
+          "t"
+        ],
+        "hebrew": "ב- / אצל",
+        "emoji": "📍"
+      },
+      {
+        "word": "past",
+        "parts": [
+          "p",
+          "a",
+          "s",
+          "t"
+        ],
+        "hebrew": "עבר",
+        "emoji": "⏳"
+      },
+      {
+        "word": "spat",
+        "parts": [
+          "s",
+          "p",
+          "a",
+          "t"
+        ],
+        "hebrew": "ריב קטן",
+        "emoji": "💬"
+      },
+      {
+        "word": "stab",
+        "parts": [
+          "s",
+          "t",
+          "a",
+          "b"
+        ],
+        "hebrew": "לדקור (במזלג)",
+        "emoji": "🍴"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "shortName": "שלב 2",
+    "title": "המילים הראשונות",
+    "letters": [
+      "i",
+      "n",
+      "m",
+      "d",
+      "g"
+    ],
+    "words": [
+      {
+        "word": "pin",
+        "parts": [
+          "p",
+          "i",
+          "n"
+        ],
+        "hebrew": "סיכה",
+        "emoji": "📌"
+      },
+      {
+        "word": "sit",
+        "parts": [
+          "s",
+          "i",
+          "t"
+        ],
+        "hebrew": "לשבת",
+        "emoji": "🪑"
+      },
+      {
+        "word": "pan",
+        "parts": [
+          "p",
+          "a",
+          "n"
+        ],
+        "hebrew": "מחבת",
+        "emoji": "🍳"
+      },
+      {
+        "word": "map",
+        "parts": [
+          "m",
+          "a",
+          "p"
+        ],
+        "hebrew": "מפה",
+        "emoji": "🗺️"
+      },
+      {
+        "word": "mat",
+        "parts": [
+          "m",
+          "a",
+          "t"
+        ],
+        "hebrew": "שטיחון",
+        "emoji": "🧶"
+      },
+      {
+        "word": "man",
+        "parts": [
+          "m",
+          "a",
+          "n"
+        ],
+        "hebrew": "איש",
+        "emoji": "👨"
+      },
+      {
+        "word": "dad",
+        "parts": [
+          "d",
+          "a",
+          "d"
+        ],
+        "hebrew": "אבא",
+        "emoji": "👨‍👧"
+      },
+      {
+        "word": "sad",
+        "parts": [
+          "s",
+          "a",
+          "d"
+        ],
+        "hebrew": "עצוב",
+        "emoji": "😢"
+      },
+      {
+        "word": "pig",
+        "parts": [
+          "p",
+          "i",
+          "g"
+        ],
+        "hebrew": "חזיר",
+        "emoji": "🐷"
+      },
+      {
+        "word": "big",
+        "parts": [
+          "b",
+          "i",
+          "g"
+        ],
+        "hebrew": "גדול",
+        "emoji": "🐘"
+      },
+      {
+        "word": "dig",
+        "parts": [
+          "d",
+          "i",
+          "g"
+        ],
+        "hebrew": "לחפור",
+        "emoji": "⛏️"
+      },
+      {
+        "word": "bag",
+        "parts": [
+          "b",
+          "a",
+          "g"
+        ],
+        "hebrew": "תיק",
+        "emoji": "🎒"
+      },
+      {
+        "word": "nap",
+        "parts": [
+          "n",
+          "a",
+          "p"
+        ],
+        "hebrew": "תנומה",
+        "emoji": "😴"
+      },
+      {
+        "word": "tin",
+        "parts": [
+          "t",
+          "i",
+          "n"
+        ],
+        "hebrew": "קופסת פח",
+        "emoji": "🥫"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "shortName": "שלב 3",
+    "title": "תנועות וצלילים",
+    "letters": [
+      "o",
+      "c",
+      "k",
+      "e",
+      "r"
+    ],
+    "words": [
+      {
+        "word": "cat",
+        "parts": [
+          "c",
+          "a",
+          "t"
+        ],
+        "hebrew": "חתול",
+        "emoji": "🐱"
+      },
+      {
+        "word": "dog",
+        "parts": [
+          "d",
+          "o",
+          "g"
+        ],
+        "hebrew": "כלב",
+        "emoji": "🐶"
+      },
+      {
+        "word": "top",
+        "parts": [
+          "t",
+          "o",
+          "p"
+        ],
+        "hebrew": "פסגה / סביבון",
+        "emoji": "🔝"
+      },
+      {
+        "word": "pot",
+        "parts": [
+          "p",
+          "o",
+          "t"
+        ],
+        "hebrew": "סיר",
+        "emoji": "🍲"
+      },
+      {
+        "word": "mop",
+        "parts": [
+          "m",
+          "o",
+          "p"
+        ],
+        "hebrew": "מגב",
+        "emoji": "🧹"
+      },
+      {
+        "word": "bed",
+        "parts": [
+          "b",
+          "e",
+          "d"
+        ],
+        "hebrew": "מיטה",
+        "emoji": "🛏️"
+      },
+      {
+        "word": "red",
+        "parts": [
+          "r",
+          "e",
+          "d"
+        ],
+        "hebrew": "אדום",
+        "emoji": "🔴"
+      },
+      {
+        "word": "net",
+        "parts": [
+          "n",
+          "e",
+          "t"
+        ],
+        "hebrew": "רשת",
+        "emoji": "🥅"
+      },
+      {
+        "word": "ten",
+        "parts": [
+          "t",
+          "e",
+          "n"
+        ],
+        "hebrew": "עשר",
+        "emoji": "🔟"
+      },
+      {
+        "word": "pen",
+        "parts": [
+          "p",
+          "e",
+          "n"
+        ],
+        "hebrew": "עט",
+        "emoji": "🖊️"
+      },
+      {
+        "word": "rat",
+        "parts": [
+          "r",
+          "a",
+          "t"
+        ],
+        "hebrew": "חולדה",
+        "emoji": "🐀"
+      },
+      {
+        "word": "run",
+        "parts": [
+          "r",
+          "u",
+          "n"
+        ],
+        "hebrew": "לרוץ",
+        "emoji": "🏃"
+      },
+      {
+        "word": "rock",
+        "parts": [
+          "r",
+          "o",
+          "ck"
+        ],
+        "hebrew": "סלע",
+        "emoji": "🪨"
+      },
+      {
+        "word": "kid",
+        "parts": [
+          "k",
+          "i",
+          "d"
+        ],
+        "hebrew": "ילד / ילדה",
+        "emoji": "🧒"
+      },
+      {
+        "word": "kick",
+        "parts": [
+          "k",
+          "i",
+          "ck"
+        ],
+        "hebrew": "לבעוט",
+        "emoji": "⚽"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "shortName": "שלב 4",
+    "title": "קריאה שוטפת",
+    "letters": [
+      "h",
+      "l",
+      "f",
+      "u",
+      "w"
+    ],
+    "words": [
+      {
+        "word": "hat",
+        "parts": [
+          "h",
+          "a",
+          "t"
+        ],
+        "hebrew": "כובע",
+        "emoji": "🎩"
+      },
+      {
+        "word": "hen",
+        "parts": [
+          "h",
+          "e",
+          "n"
+        ],
+        "hebrew": "תרנגולת",
+        "emoji": "🐔"
+      },
+      {
+        "word": "leg",
+        "parts": [
+          "l",
+          "e",
+          "g"
+        ],
+        "hebrew": "רגל",
+        "emoji": "🦵"
+      },
+      {
+        "word": "lip",
+        "parts": [
+          "l",
+          "i",
+          "p"
+        ],
+        "hebrew": "שפה",
+        "emoji": "👄"
+      },
+      {
+        "word": "log",
+        "parts": [
+          "l",
+          "o",
+          "g"
+        ],
+        "hebrew": "בול עץ",
+        "emoji": "🪵"
+      },
+      {
+        "word": "fan",
+        "parts": [
+          "f",
+          "a",
+          "n"
+        ],
+        "hebrew": "מאוורר",
+        "emoji": "🪭"
+      },
+      {
+        "word": "fun",
+        "parts": [
+          "f",
+          "u",
+          "n"
+        ],
+        "hebrew": "כיף",
+        "emoji": "🎉"
+      },
+      {
+        "word": "sun",
+        "parts": [
+          "s",
+          "u",
+          "n"
+        ],
+        "hebrew": "שמש",
+        "emoji": "☀️"
+      },
+      {
+        "word": "cup",
+        "parts": [
+          "c",
+          "u",
+          "p"
+        ],
+        "hebrew": "כוס",
+        "emoji": "☕"
+      },
+      {
+        "word": "bus",
+        "parts": [
+          "b",
+          "u",
+          "s"
+        ],
+        "hebrew": "אוטובוס",
+        "emoji": "🚌"
+      },
+      {
+        "word": "bug",
+        "parts": [
+          "b",
+          "u",
+          "g"
+        ],
+        "hebrew": "חיפושית / חרק",
+        "emoji": "🐞"
+      },
+      {
+        "word": "win",
+        "parts": [
+          "w",
+          "i",
+          "n"
+        ],
+        "hebrew": "לנצח",
+        "emoji": "🏆"
+      },
+      {
+        "word": "web",
+        "parts": [
+          "w",
+          "e",
+          "b"
+        ],
+        "hebrew": "קורי עכביש",
+        "emoji": "🕸️"
+      },
+      {
+        "word": "wet",
+        "parts": [
+          "w",
+          "e",
+          "t"
+        ],
+        "hebrew": "רטוב",
+        "emoji": "💧"
+      },
+      {
+        "word": "hug",
+        "parts": [
+          "h",
+          "u",
+          "g"
+        ],
+        "hebrew": "חיבוק",
+        "emoji": "🤗"
+      },
+      {
+        "word": "fox",
+        "parts": [
+          "f",
+          "o",
+          "x"
+        ],
+        "hebrew": "שועל",
+        "emoji": "🦊"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "shortName": "שלב 5",
+    "title": "כל ה-26 אותיות!",
+    "letters": [
+      "j",
+      "v",
+      "y",
+      "z",
+      "x",
+      "q"
+    ],
+    "words": [
+      {
+        "word": "jam",
+        "parts": [
+          "j",
+          "a",
+          "m"
+        ],
+        "hebrew": "ריבה",
+        "emoji": "🍓"
+      },
+      {
+        "word": "jet",
+        "parts": [
+          "j",
+          "e",
+          "t"
+        ],
+        "hebrew": "מטוס סילון",
+        "emoji": "✈️"
+      },
+      {
+        "word": "van",
+        "parts": [
+          "v",
+          "a",
+          "n"
+        ],
+        "hebrew": "ואן",
+        "emoji": "🚐"
+      },
+      {
+        "word": "vet",
+        "parts": [
+          "v",
+          "e",
+          "t"
+        ],
+        "hebrew": "וטרינר",
+        "emoji": "🩺"
+      },
+      {
+        "word": "yes",
+        "parts": [
+          "y",
+          "e",
+          "s"
+        ],
+        "hebrew": "כן",
+        "emoji": "✅"
+      },
+      {
+        "word": "yak",
+        "parts": [
+          "y",
+          "a",
+          "k"
+        ],
+        "hebrew": "יאק (חיה)",
+        "emoji": "🐃"
+      },
+      {
+        "word": "zip",
+        "parts": [
+          "z",
+          "i",
+          "p"
+        ],
+        "hebrew": "רוכסן",
+        "emoji": "🤐"
+      },
+      {
+        "word": "zoo",
+        "parts": [
+          "z",
+          "oo"
+        ],
+        "hebrew": "גן חיות",
+        "emoji": "🦁"
+      },
+      {
+        "word": "box",
+        "parts": [
+          "b",
+          "o",
+          "x"
+        ],
+        "hebrew": "קופסה",
+        "emoji": "📦"
+      },
+      {
+        "word": "six",
+        "parts": [
+          "s",
+          "i",
+          "x"
+        ],
+        "hebrew": "שש",
+        "emoji": "6️⃣"
+      },
+      {
+        "word": "mix",
+        "parts": [
+          "m",
+          "i",
+          "x"
+        ],
+        "hebrew": "לערבב",
+        "emoji": "🥣"
+      },
+      {
+        "word": "quiz",
+        "parts": [
+          "q",
+          "u",
+          "i",
+          "z"
+        ],
+        "hebrew": "חידון",
+        "emoji": "❓"
+      },
+      {
+        "word": "queen",
+        "parts": [
+          "q",
+          "u",
+          "ee",
+          "n"
+        ],
+        "hebrew": "מלכה",
+        "emoji": "👑"
+      },
+      {
+        "word": "jug",
+        "parts": [
+          "j",
+          "u",
+          "g"
+        ],
+        "hebrew": "כד",
+        "emoji": "🏺"
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "shortName": "שלב 6",
+    "title": "צירופי כיתה ד'!",
+    "letters": [
+      "sh",
+      "ch",
+      "th",
+      "ck",
+      "ee",
+      "oo"
+    ],
+    "words": [
+      {
+        "word": "ship",
+        "parts": [
+          "sh",
+          "i",
+          "p"
+        ],
+        "hebrew": "אונייה",
+        "emoji": "🚢"
+      },
+      {
+        "word": "shop",
+        "parts": [
+          "sh",
+          "o",
+          "p"
+        ],
+        "hebrew": "חנות",
+        "emoji": "🏪"
+      },
+      {
+        "word": "fish",
+        "parts": [
+          "f",
+          "i",
+          "sh"
+        ],
+        "hebrew": "דג",
+        "emoji": "🐟"
+      },
+      {
+        "word": "dish",
+        "parts": [
+          "d",
+          "i",
+          "sh"
+        ],
+        "hebrew": "צלחת",
+        "emoji": "🍽️"
+      },
+      {
+        "word": "chat",
+        "parts": [
+          "ch",
+          "a",
+          "t"
+        ],
+        "hebrew": "שיחה",
+        "emoji": "💬"
+      },
+      {
+        "word": "chip",
+        "parts": [
+          "ch",
+          "i",
+          "p"
+        ],
+        "hebrew": "צ'יפס",
+        "emoji": "🍟"
+      },
+      {
+        "word": "chin",
+        "parts": [
+          "ch",
+          "i",
+          "n"
+        ],
+        "hebrew": "סנטר",
+        "emoji": "🙂"
+      },
+      {
+        "word": "thin",
+        "parts": [
+          "th",
+          "i",
+          "n"
+        ],
+        "hebrew": "דק",
+        "emoji": "📏"
+      },
+      {
+        "word": "this",
+        "parts": [
+          "th",
+          "i",
+          "s"
+        ],
+        "hebrew": "זה / זאת",
+        "emoji": "👇"
+      },
+      {
+        "word": "that",
+        "parts": [
+          "th",
+          "a",
+          "t"
+        ],
+        "hebrew": "ההוא / ההיא",
+        "emoji": "👉"
+      },
+      {
+        "word": "duck",
+        "parts": [
+          "d",
+          "u",
+          "ck"
+        ],
+        "hebrew": "ברווז",
+        "emoji": "🦆"
+      },
+      {
+        "word": "clock",
+        "parts": [
+          "c",
+          "l",
+          "o",
+          "ck"
+        ],
+        "hebrew": "שעון",
+        "emoji": "⏰"
+      },
+      {
+        "word": "tree",
+        "parts": [
+          "t",
+          "r",
+          "ee"
+        ],
+        "hebrew": "עץ",
+        "emoji": "🌳"
+      },
+      {
+        "word": "bee",
+        "parts": [
+          "b",
+          "ee"
+        ],
+        "hebrew": "דבורה",
+        "emoji": "🐝"
+      },
+      {
+        "word": "book",
+        "parts": [
+          "b",
+          "oo",
+          "k"
+        ],
+        "hebrew": "ספר",
+        "emoji": "📖"
+      },
+      {
+        "word": "moon",
+        "parts": [
+          "m",
+          "oo",
+          "n"
+        ],
+        "hebrew": "ירח",
+        "emoji": "🌙"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "shortName": "שלב 7",
+    "title": "קוראים משפטים!",
+    "isSentenceLevel": true,
+    "letters": [],
+    "words": [],
+    "sentences": [
+      {
+        "id": "s1",
+        "text": "A big dog sat on a red mat",
+        "hebrew": "כלב גדול ישב על שטיחון אדום",
+        "emoji": "🐶🔴"
+      },
+      {
+        "id": "s2",
+        "text": "The fat cat has a hat",
+        "hebrew": "לחתול השמן יש כובע",
+        "emoji": "🐱🎩"
+      },
+      {
+        "id": "s3",
+        "text": "A fish is in the dish",
+        "hebrew": "דג נמצא בתוך הצלחת",
+        "emoji": "🐟🍽️"
+      },
+      {
+        "id": "s4",
+        "text": "Dad has a red pen",
+        "hebrew": "לאבא יש עט אדום",
+        "emoji": "👨🖊️"
+      },
+      {
+        "id": "s5",
+        "text": "The pig can dig in the mud",
+        "hebrew": "החזיר יכול לחפור בבוץ",
+        "emoji": "🐷⛏️"
+      },
+      {
+        "id": "s6",
+        "text": "A bug is on the cup",
+        "hebrew": "חיפושית נמצאת על הכוס",
+        "emoji": "🐞☕"
+      },
+      {
+        "id": "s7",
+        "text": "This duck can win the fun quiz",
+        "hebrew": "הברווז הזה יכול לנצח בחידון הכיפי",
+        "emoji": "🦆🏆"
+      },
+      {
+        "id": "s8",
+        "text": "Look at the moon and the tree",
+        "hebrew": "הביטי בירח ובעץ",
+        "emoji": "🌙🌳"
+      },
+      {
+        "id": "s9",
+        "text": "A bee sat on my book",
+        "hebrew": "דבורה ישבה על הספר שלי",
+        "emoji": "🐝📖"
+      },
+      {
+        "id": "s10",
+        "text": "The kid has six pens in a box",
+        "hebrew": "לילד יש שש עטים בקופסה",
+        "emoji": "🧒📦"
+      },
+      {
+        "id": "s11",
+        "text": "The red bus is fast",
+        "hebrew": "האוטובוס האדום הוא מהיר",
+        "emoji": "🚌💨"
+      },
+      {
+        "id": "s12",
+        "text": "The queen has a pet fox",
+        "hebrew": "למלכה יש שועל מחמד",
+        "emoji": "👑🦊"
+      }
+    ]
+  }
+];
+
+/** Shop prices: about 2–8 ordinary practice days per item (see COINS_PER_PRACTICE_DAY in src/lib/earning.ts). */
+export const SHOP_AVATARS: ShopItem[] = [
+  {
+    "id": "av_girl",
+    "emoji": "👧🏻",
+    "name": "ילדה חכמה",
+    "cost": 0
+  },
+  {
+    "id": "av_astro",
+    "emoji": "👩‍🚀",
+    "name": "אסטרונאוטית",
+    "cost": 200
+  },
+  {
+    "id": "av_fairy",
+    "emoji": "🧚‍♀️",
+    "name": "פיית מילים",
+    "cost": 300
+  },
+  {
+    "id": "av_hero",
+    "emoji": "🦸‍♀️",
+    "name": "גיבורת-על",
+    "cost": 450
+  },
+  {
+    "id": "av_queen",
+    "emoji": "👸",
+    "name": "מלכת האנגלית",
+    "cost": 600
+  },
+  {
+    "id": "av_robot",
+    "emoji": "🤖",
+    "name": "רובוט גאון",
+    "cost": 400
+  }
+];
+
+export const SHOP_PETS: ShopItem[] = [
+  {
+    "id": "pet_dog",
+    "emoji": "🐶",
+    "name": "כלבלב",
+    "cost": 0
+  },
+  {
+    "id": "pet_cat",
+    "emoji": "🐱",
+    "name": "חתלתול",
+    "cost": 175
+  },
+  {
+    "id": "pet_uni",
+    "emoji": "🦄",
+    "name": "חד-קרן",
+    "cost": 375
+  },
+  {
+    "id": "pet_dragon",
+    "emoji": "🐉",
+    "name": "דרקון",
+    "cost": 500
+  },
+  {
+    "id": "pet_panda",
+    "emoji": "🐼",
+    "name": "פנדה",
+    "cost": 300
+  },
+  {
+    "id": "pet_owl",
+    "emoji": "🦉",
+    "name": "ינשוף חכם",
+    "cost": 425
+  }
+];
+
+export const SHOP_THEMES: ShopTheme[] = [
+  {
+    "id": "theme-classic",
+    "name": "קלאסי סגול",
+    "icon": "💜",
+    "cost": 0,
+    "preview": "from-indigo-500 to-purple-600"
+  },
+  {
+    "id": "theme-unicorn",
+    "name": "חד-קרן ורוד",
+    "icon": "🦄",
+    "cost": 250,
+    "preview": "from-pink-500 to-purple-500"
+  },
+  {
+    "id": "theme-ocean",
+    "name": "אוקיינוס כחול",
+    "icon": "🌊",
+    "cost": 250,
+    "preview": "from-sky-500 to-teal-500"
+  },
+  {
+    "id": "theme-space",
+    "name": "חלל וכוכבים",
+    "icon": "🌌",
+    "cost": 400,
+    "preview": "from-slate-800 to-indigo-800"
+  },
+  {
+    "id": "theme-neon",
+    "name": "ניאון זוהר",
+    "icon": "⚡",
+    "cost": 500,
+    "preview": "from-fuchsia-600 to-emerald-500"
+  }
+];
+
+export const ALL_WORDS: Record<string, LevelWord> = Object.fromEntries(LEVELS.flatMap((l) => l.words.map((w) => [w.word, w])));

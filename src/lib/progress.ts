@@ -1,6 +1,8 @@
 import type { PoolClient } from 'pg';
 import { AVATARS, PETS, THEMES } from './catalog';
-import { query } from './db';
+import { audit } from './audit';
+import { query, withTransaction } from './db';
+import { addDays, todayStr } from './review';
 
 export type ProgressData = Record<string, unknown>;
 export type Progress = { data: ProgressData; version: number; updatedAt: string };
@@ -41,6 +43,7 @@ export function defaultProgress(opts: { avatar?: string; pet?: string; theme?: s
     equippedAvatar: avatar,
     equippedPet: pet,
     equippedTheme: theme,
+    paidOnce: [], // tests already paid for (see src/lib/earning.ts)
   };
 }
 
@@ -64,26 +67,68 @@ export async function getProgress(studentId: string): Promise<Progress | null> {
   return rows[0] ? toProgress(rows[0]) : null;
 }
 
-export type SaveResult = { ok: true; version: number } | { ok: false; current: Progress };
+export type SaveResult = { ok: true; version: number; coins: number } | { ok: false; current: Progress };
 
 /**
  * Optimistic concurrency: the write only lands if the client saw the latest version.
  * If a parent reset (or another device) changed it meanwhile, the client gets the
  * current server copy back instead of silently overwriting it.
  */
+/**
+ * Coin guard: the game client reports coins, so a save may add at most MAX_GAIN_PER_SAVE
+ * coins and at most MAX_GAIN_PER_HOUR per hour (server-side coins from checks, redemptions
+ * and parents don't count). Anything above is clamped and audited.
+ */
+export const MAX_GAIN_PER_SAVE = 100;
+export const MAX_GAIN_PER_HOUR = 400;
+const hourlyGains = new Map<string, { since: number; total: number }>();
+
+function allowedGain(studentId: string, wanted: number): number {
+  const now = Date.now();
+  let g = hourlyGains.get(studentId);
+  if (!g || now - g.since > 60 * 60_000) {
+    g = { since: now, total: 0 };
+    hourlyGains.set(studentId, g);
+  }
+  const allowed = Math.max(0, Math.min(wanted, MAX_GAIN_PER_SAVE, MAX_GAIN_PER_HOUR - g.total));
+  g.total += allowed;
+  return allowed;
+}
+
 export async function saveProgressIfVersion(
   studentId: string,
   data: ProgressData,
   baseVersion: number,
 ): Promise<SaveResult> {
-  const { rows } = await query<{ version: string }>(
-    `UPDATE student_progress
-        SET data = $2::jsonb, version = version + 1, updated_at = now()
-      WHERE user_id = $1 AND version = $3
-      RETURNING version`,
-    [studentId, JSON.stringify(stripServerOwned(data)), baseVersion],
-  );
-  if (rows[0]) return { ok: true, version: Number(rows[0].version) };
+  const outcome = await withTransaction(async (client) => {
+    const cur = await client.query<{ data: ProgressData; version: string }>(
+      'SELECT data, version FROM student_progress WHERE user_id = $1 FOR UPDATE',
+      [studentId],
+    );
+    const row = cur.rows[0];
+    if (!row) throw new Error('progress row missing');
+    if (Number(row.version) !== baseVersion) return null; // stale -> conflict
+
+    const next = stripServerOwned(data);
+    const before = Number(row.data.coins) || 0;
+    const wanted = Number(next.coins);
+    if (Number.isFinite(wanted) && wanted > before) {
+      const gain = allowedGain(studentId, wanted - before);
+      if (gain < wanted - before) {
+        next.coins = before + gain;
+        await audit(null, 'coins.suspicious', studentId, { before, wanted, allowed: before + gain }, client);
+      }
+    } else if (!Number.isFinite(wanted) || wanted < 0) {
+      next.coins = Math.max(0, before);
+    }
+
+    const upd = await client.query<{ version: string }>(
+      'UPDATE student_progress SET data = $2::jsonb, version = version + 1, updated_at = now() WHERE user_id = $1 RETURNING version',
+      [studentId, JSON.stringify(next)],
+    );
+    return { version: Number(upd.rows[0].version), coins: Number(next.coins) || 0 };
+  });
+  if (outcome) return { ok: true, version: outcome.version, coins: outcome.coins };
   const current = await getProgress(studentId);
   if (!current) throw new Error('progress row missing');
   return { ok: false, current };
@@ -147,5 +192,69 @@ export function summarize(data: ProgressData | undefined) {
     mistakes: arr('mistakes').length,
     equippedAvatar: typeof data?.equippedAvatar === 'string' ? data.equippedAvatar : 'av_girl',
     equippedPet: typeof data?.equippedPet === 'string' ? data.equippedPet : 'pet_dog',
+    ...spellingSummary(data?.spellingStats),
+    ...reviewSummary(data),
+    placement: placementOf(data),
+    ...dictationSummary(data?.dictationStats),
+    grammar: grammarSummary(data?.grammarStats),
+    ...readingSummary(data?.readingStats),
+    ...speakingSummary(data?.speakingStats),
+    ...sightSummary(data?.sightStats),
+  };
+}
+
+function sightSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { c?: number; w?: number }>) : [];
+  return { sightSeen: stats.length, sightKnown: stats.filter((s) => (s?.c ?? 0) > (s?.w ?? 0)).length };
+}
+
+function speakingSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { ok?: number }>) : [];
+  return { speakingTried: stats.length, speakingOk: stats.filter((s) => (s?.ok ?? 0) > 0).length };
+}
+
+function readingSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { best?: number }>) : [];
+  const bests = stats.map((s) => Number(s?.best) || 0);
+  return { storiesRead: stats.length, storiesAvg: bests.length ? Math.round(bests.reduce((a, b) => a + b, 0) / bests.length) : 0 };
+}
+
+/** Best score per grammar topic (topic id -> %). */
+function grammarSummary(raw: unknown): Record<string, number> {
+  if (!raw || typeof raw !== 'object') return {};
+  return Object.fromEntries(Object.entries(raw as Record<string, { best?: number }>).map(([k, v]) => [k, Number(v?.best) || 0]));
+}
+
+function dictationSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { c?: number }>) : [];
+  return { dictationTried: stats.length, dictationPerfect: stats.filter((s) => (s?.c ?? 0) > 0).length };
+}
+
+function placementOf(data: ProgressData | undefined): { date: string; passedThrough: number } | null {
+  const p = data?.placement as { date?: string; passedThrough?: number } | undefined;
+  return p && typeof p.date === 'string' ? { date: p.date, passedThrough: Number(p.passedThrough) || 0 } : null;
+}
+
+/** Daily review (spaced repetition) written by /practice/daily. */
+function reviewSummary(data: ProgressData | undefined) {
+  const daily = (data?.dailyReview ?? {}) as { last?: string; streak?: number };
+  const stats = data?.reviewStats && typeof data.reviewStats === 'object' ? Object.values(data.reviewStats as Record<string, { box?: number; due?: string }>) : [];
+  const today = todayStr();
+  return {
+    reviewLast: typeof daily.last === 'string' ? daily.last : null,
+    reviewStreak: daily.last === today || daily.last === addDays(today, -1) ? Number(daily.streak) || 0 : 0,
+    reviewTracked: stats.length,
+    reviewDue: stats.filter((s) => typeof s?.due === 'string' && s.due <= today).length,
+    reviewMastered: stats.filter((s) => (s?.box ?? 0) >= 4).length,
+  };
+}
+
+/** Spelling stats written by /practice/spell: { [word]: { c, w, s, t } }. */
+function spellingSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { s?: number; w?: number }>) : [];
+  return {
+    spellingPracticed: stats.length,
+    spellingKnown: stats.filter((st) => (st?.s ?? 0) >= 3).length,
+    spellingWeak: stats.filter((st) => (st?.w ?? 0) > 0 && (st?.s ?? 0) < 3).length,
   };
 }

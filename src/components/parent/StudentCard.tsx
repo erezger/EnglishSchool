@@ -2,7 +2,14 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api-client';
+import { GRAMMAR } from '@/content/grammar';
+import { gradeLabel } from '@/content/wordbank';
+
+const GRAMMAR_TITLES: Record<string, string> = Object.fromEntries(GRAMMAR.map((t) => [t.id, t.title]));
 import { avatarEmoji, petEmoji, TOTAL_LEVELS } from '@/lib/catalog';
+import { COINS_PER_PRACTICE_DAY, practiceDaysLabel } from '@/lib/earning';
+import ChecksAndCoins from './ChecksAndCoins';
+import ModuleSettings from './ModuleSettings';
 import type { StudentSummary } from './types';
 import { Btn, ConfirmWithPassword, ErrorNote, Field, formatDate } from './ui';
 
@@ -23,6 +30,7 @@ export default function StudentCard({
   const [rewardTitle, setRewardTitle] = useState('');
   const [rewardCost, setRewardCost] = useState('');
   const [name, setName] = useState(student.displayName);
+  const [grade, setGrade] = useState<string>(student.grade ? String(student.grade) : '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const p = student.progress;
@@ -42,7 +50,7 @@ export default function StudentCard({
   }
 
   return (
-    <div className="border-2 border-slate-200 rounded-2xl p-4 bg-white">
+    <div className="border-2 border-slate-200 rounded-2xl p-4 bg-white" data-testid={`student-card-${student.username}`}>
       <div className="flex items-start gap-3">
         <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-3xl shrink-0">
           <span>{avatarEmoji(p.equippedAvatar)}</span>
@@ -56,6 +64,11 @@ export default function StudentCard({
             <span className="text-xs font-bold text-slate-500" dir="ltr">
               @{student.username}
             </span>
+            {student.grade && (
+              <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200">
+                כיתה {gradeLabel(student.grade)}
+              </span>
+            )}
             {!student.hasPin && (
               <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
                 ⚠️ עוד לא הוגדר קוד כניסה
@@ -69,6 +82,9 @@ export default function StudentCard({
           </div>
           <div className="text-xs text-slate-500 mt-0.5">כניסה אחרונה: {formatDate(student.lastLoginAt)}</div>
         </div>
+        <a href={`/parent/report/${student.id}`} className="px-3 py-2 rounded-xl text-sm font-extrabold text-indigo-700 hover:bg-indigo-50">
+          📊 דוח שבועי
+        </a>
         <Btn variant="ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
           {open ? 'סגור ▲' : 'ניהול ▼'}
         </Btn>
@@ -82,6 +98,54 @@ export default function StudentCard({
         <Stat label="משפטים" value={String(p.readSentences)} />
         <Stat label="רצף ימים" value={`🔥 ${p.dailyStreak}`} />
       </div>
+      {p.sightSeen > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-violet-50/60 border border-violet-100 rounded-xl px-3 py-2">
+          ⚡ קריאה מהירה: {p.sightKnown} מתוך {p.sightSeen} מילים נקראות במבט אחד
+        </div>
+      )}
+      {p.speakingTried > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-amber-50/60 border border-amber-100 rounded-xl px-3 py-2">
+          🎤 דיבור: {p.speakingOk} מתוך {p.speakingTried} מילים נאמרו נכון
+        </div>
+      )}
+      {p.storiesRead > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-pink-50/60 border border-pink-100 rounded-xl px-3 py-2">
+          📖 קריאה והבנה: {p.storiesRead} סיפורים · ממוצע הבנה {p.storiesAvg}%
+        </div>
+      )}
+      {Object.keys(p.grammar).length > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-emerald-50/60 border border-emerald-100 rounded-xl px-3 py-2">
+          📘 דקדוק (שיא):{' '}
+          {Object.entries(p.grammar).map(([topic, best]) => (
+            <span key={topic} className={`ms-2 font-english ${best >= 80 ? 'text-emerald-700' : 'text-rose-700'}`} dir="ltr">
+              {GRAMMAR_TITLES[topic] ?? topic} {best}%
+            </span>
+          ))}
+        </div>
+      )}
+      {p.dictationTried > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-indigo-50/60 border border-indigo-100 rounded-xl px-3 py-2">
+          ✍️ הכתבה: {p.dictationPerfect} מתוך {p.dictationTried} משפטים נכתבו מושלם
+        </div>
+      )}
+      {p.placement && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-violet-50/60 border border-violet-100 rounded-xl px-3 py-2">
+          🧭 מבחן מיקום ({p.placement.date}): {p.placement.passedThrough > 0 ? `עבר/ה עד שלב ${p.placement.passedThrough}` : 'התחיל/ה מההתחלה'}
+        </div>
+      )}
+      {p.reviewTracked > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-sky-50/60 border border-sky-100 rounded-xl px-3 py-2">
+          ⏰ חזרה יומית: {p.reviewStreak > 0 ? <span className="text-orange-600">🔥 {p.reviewStreak} ימים ברצף</span> : 'אין רצף כרגע'}
+          {' · '}אחרונה: {p.reviewLast ?? '—'} · {p.reviewMastered} מתוך {p.reviewTracked} פריטים יושבים טוב
+          {p.reviewDue > 0 && <span className="text-sky-800"> · {p.reviewDue} מחכים לחזרה</span>}
+        </div>
+      )}
+      {p.spellingPracticed > 0 && (
+        <div className="mt-2 text-xs font-bold text-slate-600 bg-amber-50/60 border border-amber-100 rounded-xl px-3 py-2">
+          🐝 איות: {p.spellingPracticed} מילים תורגלו · <span className="text-emerald-700">{p.spellingKnown} יודעים</span>
+          {p.spellingWeak > 0 && <span className="text-rose-700"> · {p.spellingWeak} צריכות חיזוק</span>}
+        </div>
+      )}
 
       {open && (
         <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
@@ -95,7 +159,7 @@ export default function StudentCard({
               {student.rewards.map((r) => (
                 <div key={r.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
                   <span className="font-bold text-slate-800">
-                    {r.title} <span className="text-amber-700 text-xs">({r.cost} 🪙)</span>
+                    {r.title} <span className="text-amber-700 text-xs">({r.cost} 🪙 · ≈ {practiceDaysLabel(r.cost)})</span>
                   </span>
                   <Btn
                     variant="ghost"
@@ -137,7 +201,16 @@ export default function StudentCard({
                 הוסף
               </Btn>
             </form>
+            <p className="text-xs text-slate-500 mt-1.5" data-testid="reward-price-hint">
+              {Number(rewardCost) > 0
+                ? `${Number(rewardCost)} מטבעות ≈ ${practiceDaysLabel(Number(rewardCost))} (יום תרגול רגיל ≈ ${COINS_PER_PRACTICE_DAY} מטבעות)`
+                : `לתמחור: יום תרגול רגיל ≈ ${COINS_PER_PRACTICE_DAY} מטבעות. למשל פרס קטן ≈ 300, פרס גדול ≈ 1,000.`}
+            </p>
           </div>
+
+          <ModuleSettings student={student} qs={qs} onChanged={onChanged} />
+
+          <ChecksAndCoins student={student} qs={qs} onChanged={onChanged} />
 
           {/* Account */}
           <div>
@@ -156,6 +229,26 @@ export default function StudentCard({
                 שמור
               </Btn>
             </form>
+            <label className="flex items-center gap-2 mb-2 text-xs font-bold text-slate-600">
+              כיתה:
+              <select
+                value={grade}
+                disabled={busy}
+                onChange={(e) => {
+                  setGrade(e.target.value);
+                  void act(() => api(`${base}${qs}`, { method: 'PATCH', body: { grade: e.target.value || null } }));
+                }}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm bg-white"
+              >
+                <option value="">לא הוגדר</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
+                  <option key={g} value={g}>
+                    {gradeLabel(g)}
+                  </option>
+                ))}
+              </select>
+              <span className="font-medium text-slate-400">(קובע את מאגר המילים לאיות)</span>
+            </label>
             <div className="flex flex-wrap gap-2">
               <Btn variant={student.hasPin ? 'secondary' : 'primary'} onClick={() => setDialog('pin')}>
                 🔢 {student.hasPin ? 'שינוי קוד כניסה' : 'הגדרת קוד כניסה'}

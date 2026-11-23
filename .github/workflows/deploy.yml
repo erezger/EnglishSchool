@@ -30,6 +30,15 @@ jobs:
               test -s "$F" || { echo "DB backup is empty - deploy aborted"; rm -f "$F"; exit 1; }
               gzip "$F"
               echo "Backup saved: $F.gz ($(du -h "$F.gz" | cut -f1))"
+              # Optional off-server copy (Oracle Object Storage pre-authenticated request URL ending with "/")
+              OFFSITE_URL=$(grep -E '^BACKUP_UPLOAD_URL=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d "\"' " || true)
+              if [ -n "$OFFSITE_URL" ]; then
+                if curl -sSf --max-time 300 -T "$F.gz" "${OFFSITE_URL}school/$(basename "$F.gz")" -o /dev/null; then
+                  echo "Off-server copy uploaded"
+                else
+                  echo "WARNING: off-server upload failed (local backup is fine, deploy continues)"
+                fi
+              fi
               ls -1t "$BACKUP_DIR"/*.sql.gz | tail -n +$((KEEP + 1)) | xargs -r rm -f
             else
               echo "DB container not running - skipping backup (first deploy?)"

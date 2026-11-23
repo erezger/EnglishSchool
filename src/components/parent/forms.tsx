@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api-client';
+import { gradeLabel } from '@/content/wordbank';
 import { AVATARS, PETS, THEMES } from '@/lib/catalog';
 import { Btn, ErrorNote, Field, Modal } from './ui';
 
@@ -29,6 +30,7 @@ export function AddStudentModal({ qs, onClose, onDone }: { qs: string; onClose: 
   const [avatar, setAvatar] = useState<string>(AVATARS[0].id);
   const [pet, setPet] = useState<string>(PETS[0].id);
   const [theme, setTheme] = useState<string>(THEMES[0].id);
+  const [grade, setGrade] = useState('');
   const { busy, error, submit } = useSubmit(async () => {
     await onDone();
     onClose();
@@ -41,7 +43,7 @@ export function AddStudentModal({ qs, onClose, onDone }: { qs: string; onClose: 
         onSubmit={(e) => {
           e.preventDefault();
           void submit(() =>
-            api(`/api/family/students${qs}`, { method: 'POST', body: { displayName, username, pin, avatar, pet, theme } }),
+            api(`/api/family/students${qs}`, { method: 'POST', body: { displayName, username, pin, avatar, pet, theme, grade: grade || null } }),
           );
         }}
       >
@@ -64,6 +66,17 @@ export function AddStudentModal({ qs, onClose, onDone }: { qs: string; onClose: 
           dir="ltr"
           className="text-center text-xl tracking-[0.5em] font-black"
         />
+        <label className="block">
+          <span className="block text-xs font-bold text-slate-600 mb-1">כיתה</span>
+          <select value={grade} onChange={(e) => setGrade(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white">
+            <option value="">לא הוגדר</option>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
+              <option key={g} value={g}>
+                {gradeLabel(g)}
+              </option>
+            ))}
+          </select>
+        </label>
         <Picker label="דמות" items={AVATARS.map((a) => ({ id: a.id, icon: a.emoji, name: a.name }))} value={avatar} onChange={setAvatar} />
         <Picker label="חיית מחמד" items={PETS.map((p) => ({ id: p.id, icon: p.emoji, name: p.name }))} value={pet} onChange={setPet} />
         <Picker label="ערכת צבעים" items={THEMES.map((t) => ({ id: t.id, icon: t.icon, name: t.name }))} value={theme} onChange={setTheme} />

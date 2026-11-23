@@ -9,9 +9,12 @@ const ADMIN = { username: process.env.ADMIN_USERNAME ?? 'admin', password: proce
 const rnd = () => Math.random().toString(36).slice(2, 8);
 
 /** Minimal client with its own cookie (= one browser/device). */
+const cookies = new WeakMap();
+const cookieOf = async (c) => cookies.get(c)();
+
 function client() {
   let cookie = '';
-  return async function call(method, path, body, headers = {}) {
+  const call = async function call(method, path, body, headers = {}) {
     const res = await fetch(BASE + path, {
       method,
       headers: {
@@ -30,6 +33,8 @@ function client() {
     const json = await res.json().catch(() => ({}));
     return { status: res.status, json };
   };
+  cookies.set(call, () => cookie);
+  return call;
 }
 
 async function login(username, secret) {
@@ -141,13 +146,13 @@ describe('student permissions', () => {
     const { json: p } = await kidA('GET', '/api/me/progress');
     assert.equal(p.data.coins, 0);
     const save = await kidA('PUT', '/api/me/progress', {
-      data: { ...p.data, coins: 300, parentRewards: [{ title: 'hack', cost: 1 }] },
+      data: { ...p.data, coins: 90, parentRewards: [{ title: 'hack', cost: 1 }] },
       baseVersion: p.version,
     });
     assert.equal(save.status, 200);
     const stale = await kidA('PUT', '/api/me/progress', { data: { ...p.data, coins: 1 }, baseVersion: p.version });
     assert.equal(stale.status, 409, 'stale write rejected');
-    assert.equal(stale.json.current.data.coins, 300);
+    assert.equal(stale.json.current.data.coins, 90);
     assert.equal(stale.json.current.data.parentRewards, undefined);
   });
 });
@@ -229,5 +234,525 @@ describe('parent actions', () => {
     const g = await parentB('POST', '/api/family/guardians', { username: `t_${rnd()}`, displayName: 'Teacher', password: 'teacher-pass-1' });
     assert.equal(g.status, 201);
     assert.equal((await parentB('DELETE', `/api/family/guardians/${g.json.id}`, { confirmPassword: famB.pw })).status, 200);
+  });
+});
+
+describe('word lists & spelling', () => {
+  let listId;
+
+  // an earlier test changes Kid A's PIN to 5555, which logs the old session out
+  before(async () => {
+    kidA = await login(famA.kid, '5555');
+  });
+
+  test('parent creates a list and pastes words (with meanings, duplicates, invalid lines)', async () => {
+    const r = await parentA('POST', '/api/family/word-lists', { title: 'Unit 3', studentId: null });
+    assert.equal(r.status, 201);
+    listId = r.json.id;
+    const add = await parentA('POST', `/api/family/word-lists/${listId}/words`, {
+      text: 'apple - תפוח\nbanana\nBanana\nice cream = גלידה\nשלום\nbecause',
+    });
+    assert.equal(add.status, 201);
+    assert.equal(add.json.added, 4); // apple, banana, ice cream, because
+    assert.deepEqual(add.json.invalid, ['שלום']);
+    const again = await parentA('POST', `/api/family/word-lists/${listId}/words`, { text: 'apple' });
+    assert.equal(again.json.duplicates, 1);
+    const { json } = await parentA('GET', '/api/family/word-lists');
+    const list = json.lists.find((l) => l.id === listId);
+    assert.deepEqual(list.words.map((w) => w.word), ['apple', 'banana', 'ice cream', 'because']);
+    assert.equal(list.words[0].hebrew, 'תפוח');
+  });
+
+  test("lists are private to the family; students can't manage them", async () => {
+    const other = await parentB('GET', '/api/family/word-lists');
+    assert.ok(other.json.lists.every((l) => l.id !== listId));
+    assert.equal((await parentB('POST', `/api/family/word-lists/${listId}/words`, { text: 'hack' })).status, 404);
+    assert.equal((await parentB('DELETE', `/api/family/word-lists/${listId}`)).status, 404);
+    const word = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === listId).words[0];
+    assert.equal((await parentB('PATCH', `/api/family/words/${word.id}`, { hebrew: 'x' })).status, 404);
+    assert.equal((await kidA('GET', '/api/family/word-lists')).status, 403);
+    assert.equal((await kidA('POST', '/api/family/word-lists', { title: 'mine' })).status, 403);
+  });
+
+  test('AI completion fills only empty fields and is marked for review (or is cleanly disabled)', async () => {
+    const { json: before } = await parentA('GET', '/api/family/word-lists');
+    const r = await parentA('POST', `/api/family/word-lists/${listId}/enrich`);
+    if (!before.aiEnabled) {
+      assert.equal(r.status, 503);
+      return;
+    }
+    assert.equal(r.status, 200, JSON.stringify(r.json));
+    assert.equal(r.json.remaining, 0);
+    const list = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === listId);
+    const apple = list.words.find((w) => w.word === 'apple');
+    assert.equal(apple.hebrew, 'תפוח', "parent's meaning kept");
+    assert.ok(apple.exampleEn && apple.aiGenerated);
+    // a parent edit/approve clears the AI flag
+    assert.equal((await parentA('PATCH', `/api/family/words/${apple.id}`, { hebrew: 'תפוח עץ' })).status, 200);
+    const after = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === listId);
+    const apple2 = after.words.find((w) => w.word === 'apple');
+    assert.equal(apple2.hebrew, 'תפוח עץ');
+    assert.equal(apple2.aiGenerated, false);
+  });
+
+  test('word validation: English only, no duplicates on rename', async () => {
+    const list = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === listId);
+    const [a, b] = list.words;
+    assert.equal((await parentA('PATCH', `/api/family/words/${a.id}`, { word: 'שלום' })).status, 400);
+    assert.equal((await parentA('PATCH', `/api/family/words/${a.id}`, { word: b.word.toUpperCase() })).status, 409);
+  });
+
+  test('grade: parent can set it, validated', async () => {
+    assert.equal((await parentA('PATCH', `/api/family/students/${kidAId}`, { grade: 4 })).status, 200);
+    assert.equal((await parentA('PATCH', `/api/family/students/${kidAId}`, { grade: 13 })).status, 400);
+    const kid = (await parentA('GET', '/api/family')).json.students.find((s) => s.id === kidAId);
+    assert.equal(kid.grade, 4);
+    assert.equal(kid.displayName, 'Kid A', 'grade-only update keeps the name');
+  });
+
+  test('list assigned to one kid is visible only to that kid', async () => {
+    const r = await parentA('POST', '/api/family/students', { username: `sib_${rnd()}`, displayName: 'Sibling', pin: '1357' });
+    const sibling = await login((await parentA('GET', '/api/family')).json.students.find((s) => s.id === r.json.id).username, '1357');
+    const own = await parentA('POST', '/api/family/word-lists', { title: `OnlyForKidA_${rnd()}`, studentId: kidAId });
+    await parentA('POST', `/api/family/word-lists/${own.json.id}/words`, { text: 'secret' });
+    const title = (await parentA('GET', '/api/family/word-lists')).json.lists.find((l) => l.id === own.json.id).title;
+    const pageFor = async (c) => {
+      const res = await fetch(BASE + '/practice/spell', { headers: { Cookie: await cookieOf(c) } });
+      return res.text();
+    };
+    assert.ok((await pageFor(kidA)).includes(title));
+    assert.ok(!(await pageFor(sibling)).includes(title));
+    // can't assign a list to another family's kid
+    assert.equal((await parentA('POST', '/api/family/word-lists', { title: 'x', studentId: kidBId })).status, 400);
+  });
+
+  test('spelling stats survive saves from the game (unknown fields preserved)', async () => {
+    const { json: p } = await kidA('GET', '/api/me/progress');
+    const stats = { apple: { c: 1, w: 0, s: 1, t: 1 } };
+    const r = await kidA('PUT', '/api/me/progress', { data: { ...p.data, spellingStats: stats }, baseVersion: p.version });
+    assert.equal(r.status, 200);
+    const { json: p2 } = await kidA('GET', '/api/me/progress');
+    assert.deepEqual(p2.data.spellingStats, stats);
+    const kid = (await parentA('GET', '/api/family')).json.students.find((s) => s.id === kidAId);
+    assert.equal(kid.progress.spellingPracticed, 1);
+  });
+});
+
+describe('mastery checks & coin adjustments', () => {
+  // Correct answers from the game content (src/content/phonics.ts)
+  const LETTER_NAMES = { a: 'אֵיי', b: 'בִּי', s: 'אֶס' };
+  const MEANINGS = { bat: 'עטלף', sat: 'ישב' };
+  const decode = (audio) => Buffer.from(audio, 'base64').toString('utf8').split('').reverse().join('');
+  const answerFor = (q, correct) => {
+    if (!correct) return q.type === 'spell' ? 'zzz' : q.options.find((o) => o !== LETTER_NAMES[q.letter] && o !== MEANINGS[q.word]);
+    if (q.type === 'letter') return LETTER_NAMES[q.letter];
+    if (q.type === 'meaning') return MEANINGS[q.word];
+    return decode(q.audio);
+  };
+  let kid;
+
+  before(async () => {
+    kid = await login(famA.kid, '5555');
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const data = {
+      ...p.data,
+      coins: 10,
+      learnedLetters: ['a', 'b', 's'],
+      readWords: ['bat', 'sat'],
+      mistakes: [],
+      spellingStats: { cat: { c: 3, w: 0, s: 3, t: 1 } },
+    };
+    assert.equal((await kid('PUT', '/api/me/progress', { data, baseVersion: p.version })).status, 200);
+  });
+
+  test('parent sends a check; only one open at a time; answers never sent to the kid', async () => {
+    const fam = (await parentA('GET', '/api/family')).json;
+    assert.deepEqual(fam.students.find((s) => s.id === kidAId).checkable, { letters: 3, words: 2, spelling: 1 });
+    const r = await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters', 'words', 'spelling'], size: 10 });
+    assert.equal(r.status, 201, JSON.stringify(r.json));
+    assert.equal(r.json.total, 6);
+    assert.equal((await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 })).status, 409);
+    const { json } = await kid('GET', '/api/me/check');
+    assert.equal(json.check.questions.length, 6);
+    assert.ok(!JSON.stringify(json.check).includes('"answer"'), 'no answers in the payload');
+    assert.ok(!JSON.stringify(json.check).includes('"cat"'), 'spelling word not in plain text');
+    assert.equal((await kid('GET', '/api/me/notices')).json.openCheck.total, 6);
+  });
+
+  test('permissions: other kids and families cannot touch it, kids cannot create or cancel', async () => {
+    const { json } = await kid('GET', '/api/me/check');
+    const id = json.check.id;
+    assert.equal((await kidB('POST', `/api/me/check/${id}/answer`, { index: 0, answer: 'x' })).status, 404);
+    assert.equal((await kidB('POST', `/api/me/check/${id}/finish`)).status, 404);
+    assert.equal((await parentB('DELETE', `/api/family/checks/${id}`)).status, 404);
+    assert.equal((await parentB('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 })).status, 404);
+    assert.equal((await kid('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 })).status, 403);
+    assert.equal((await kid('POST', `/api/family/students/${kidAId}/coins`, { amount: 1000, reason: 'me' })).status, 403);
+  });
+
+  test('all wrong: graded on server, failed items go back to practice, first answer counts', async () => {
+    const { json } = await kid('GET', '/api/me/check');
+    const { id, questions } = json.check;
+    for (const [i, q] of questions.entries()) {
+      assert.equal((await kid('POST', `/api/me/check/${id}/answer`, { index: i, answer: answerFor(q, false) })).status, 200);
+      // a second (correct) answer is ignored
+      await kid('POST', `/api/me/check/${id}/answer`, { index: i, answer: answerFor(q, true) });
+    }
+    const fin = await kid('POST', `/api/me/check/${id}/finish`);
+    assert.equal(fin.status, 200);
+    assert.equal(fin.json.score, 0);
+    assert.equal(fin.json.coins, 0);
+    assert.equal((await kid('POST', `/api/me/check/${id}/finish`)).status, 404, 'cannot finish twice');
+    const { json: p } = await kid('GET', '/api/me/progress');
+    assert.deepEqual(p.data.learnedLetters, [], 'failed letters un-marked');
+    assert.deepEqual([...p.data.mistakes].sort(), ['bat', 'sat']);
+    assert.equal(p.data.spellingStats.cat.s, 0);
+    assert.equal(p.data.coins, 10);
+    const fam = (await parentA('GET', '/api/family')).json.students.find((s) => s.id === kidAId);
+    assert.equal(fam.checks[0].score, 0);
+    assert.equal(fam.checks[0].failed.length, 6);
+  });
+
+  test('all correct: +1 per answer and +5 bonus', async () => {
+    const { json: p } = await kid('GET', '/api/me/progress');
+    await kid('PUT', '/api/me/progress', {
+      data: { ...p.data, learnedLetters: ['a', 'b', 's'], spellingStats: { cat: { c: 3, w: 1, s: 3, t: 1 } } },
+      baseVersion: p.version,
+    });
+    const r = await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters', 'words', 'spelling'], size: 10 });
+    assert.equal(r.status, 201);
+    const { json } = await kid('GET', '/api/me/check');
+    for (const [i, q] of json.check.questions.entries()) {
+      await kid('POST', `/api/me/check/${json.check.id}/answer`, { index: i, answer: answerFor(q, true) });
+    }
+    const fin = await kid('POST', `/api/me/check/${json.check.id}/finish`);
+    assert.equal(fin.json.score, 6);
+    assert.equal(fin.json.coins, 11);
+    const { json: p2 } = await kid('GET', '/api/me/progress');
+    assert.equal(p2.data.coins, 21);
+    assert.equal(p2.data.spellingStats.cat.s, 4);
+  });
+
+  test('cancel an open check', async () => {
+    const r = await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 });
+    assert.equal((await parentA('DELETE', `/api/family/checks/${r.json.id}`)).status, 200);
+    assert.equal((await kid('GET', '/api/me/check')).json.check, null);
+  });
+
+  test('parent removes/adds coins with a reason; never below zero; kid gets a notice once', async () => {
+    assert.equal((await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: -5, reason: '' })).status, 400);
+    assert.equal((await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: 0, reason: 'x' })).status, 400);
+    const r1 = await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: -5, reason: 'סימנת בלי ללמוד' });
+    assert.equal(r1.json.coins, 16);
+    const r2 = await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: -1000, reason: 'test floor' });
+    assert.equal(r2.json.coins, 0);
+    assert.equal(r2.json.applied, -16);
+    await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: 3, reason: 'כל הכבוד' });
+    assert.equal((await parentB('POST', `/api/family/students/${kidAId}/coins`, { amount: 5, reason: 'x' })).status, 404);
+    const n = (await kid('GET', '/api/me/notices')).json.adjustments;
+    assert.deepEqual(n.map((a) => a.amount), [-5, -16, 3]);
+    await kid('POST', '/api/me/notices/seen', { ids: n.map((a) => a.id) });
+    assert.equal((await kid('GET', '/api/me/notices')).json.adjustments.length, 0);
+    const fam = (await parentA('GET', '/api/family')).json.students.find((s) => s.id === kidAId);
+    assert.equal(fam.coinAdjustments[0].seen, true);
+  });
+
+  test('recompute: estimate by the new rules, parent-only, applied as a coin change the kid sees', async () => {
+    const url = `/api/family/students/${kidAId}/recompute`;
+    assert.equal((await parentB('GET', url)).status, 404);
+    assert.equal((await kid('GET', url)).status, 403);
+    assert.equal((await parentB('POST', url, { target: 5 })).status, 404);
+
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const data = { ...p.data, learnedLetters: ['a', 'b', 's'], readWords: ['bat', 'sat'], completedLevels: [1], bdBestScore: 9 };
+    delete data.paidOnce;
+    delete data.placement;
+    assert.equal((await kid('PUT', '/api/me/progress', { data, baseVersion: p.version })).status, 200);
+    // the save guard caps coin jumps, so the balance is set the parent way
+    const now = (await kid('GET', '/api/me/progress')).json.data.coins;
+    await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: 500 - now, reason: 'הכנה לבדיקה' });
+
+    const est = (await parentA('GET', url)).json;
+    assert.equal(est.current, 500);
+    const line = (label) => est.lines.find((l) => l.label === label)?.coins;
+    assert.equal(line('אותיות שנלמדו'), 3 * 2);
+    assert.equal(line('מילים שנקראו'), 2 * 3);
+    assert.equal(line('חידוני שלבים (פעם ראשונה)'), 6 * 5 + 15);
+    assert.equal(line('אתגר b/d/p/q (פעם ראשונה)'), 9 * 3 + 15);
+    assert.equal(est.target, Math.max(0, est.lines.reduce((s, l) => s + l.coins, 0)));
+
+    assert.equal((await parentA('POST', url, { target: -1 })).status, 400);
+    const r = await parentA('POST', url, { target: 120 });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.coins, 120);
+    assert.equal(r.json.applied, -380);
+    const after = (await kid('GET', '/api/me/progress')).json.data;
+    assert.equal(after.coins, 120);
+    assert.deepEqual(after.paidOnce.sort(), ['bd', 'quiz:1'], 'finished tests are marked as paid');
+    const notice = (await kid('GET', '/api/me/notices')).json.adjustments.at(-1);
+    assert.equal(notice.amount, -380);
+    assert.equal(notice.reason, 'עדכון לפי כללי המטבעות החדשים');
+    await kid('POST', '/api/me/notices/seen', { ids: [notice.id] });
+  });
+});
+
+describe('daily review (spaced repetition)', () => {
+  let kid;
+  before(async () => {
+    kid = await login(famA.kid, '5555');
+  });
+
+  test('today counts learned items; items due in the future are skipped', async () => {
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const base = { ...p.data, learnedLetters: ['a', 'b'], readWords: ['bat'], mistakes: [], spellingStats: {}, reviewStats: {}, dailyReview: {} };
+    assert.equal((await kid('PUT', '/api/me/progress', { data: base, baseVersion: p.version })).status, 200);
+    let review = (await kid('GET', '/api/me/notices')).json.review;
+    assert.equal(review.count, 3);
+    assert.equal(review.doneToday, false);
+
+    const { json: p2 } = await kid('GET', '/api/me/progress');
+    const reviewStats = { 'letter:a': { box: 3, due: '2999-01-01' }, 'letter:b': { box: 1, due: '2000-01-01' } };
+    await kid('PUT', '/api/me/progress', { data: { ...p2.data, reviewStats }, baseVersion: p2.version });
+    review = (await kid('GET', '/api/me/notices')).json.review;
+    assert.equal(review.count, 2, 'b is due, bat is new, a is not due yet');
+  });
+
+  test('daily page: kids only', async () => {
+    const kidPage = await fetch(BASE + '/practice/daily', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(kidPage.status, 200);
+    assert.ok((await kidPage.text()).includes('5 דקות ביום'));
+    const parentPage = await fetch(BASE + '/practice/daily', { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(parentPage.status));
+  });
+
+  test('parent dashboard shows review summary', async () => {
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.progress.reviewTracked, 2);
+    assert.equal(s.progress.reviewDue, 1);
+  });
+});
+
+describe('placement test', () => {
+  test('placement page: kids only; parent summary shows the result', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = await fetch(BASE + '/practice/placement', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(page.status, 200);
+    assert.ok((await page.text()).includes('מבחן מיקום'));
+    const asParent = await fetch(BASE + '/practice/placement', { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(asParent.status));
+
+    const { json: p } = await kid('GET', '/api/me/progress');
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, placement: { date: '2026-11-22', passedThrough: 3 } }, baseVersion: p.version });
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.deepEqual(s.progress.placement, { date: '2026-11-22', passedThrough: 3 });
+  });
+});
+
+describe('dictation & practice hub', () => {
+  test('pages are for kids only and list the sources', async () => {
+    const kid = await login(famA.kid, '5555');
+    const hub = await fetch(BASE + '/practice', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(hub.status, 200);
+    const hubHtml = await hub.text();
+    assert.ok(hubHtml.includes('הכתבה') && hubHtml.includes('שומעים ומאייתים'));
+    const page = await fetch(BASE + '/practice/dictation', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(page.status, 200);
+    assert.ok((await page.text()).includes('משפטים לכיתה'));
+    for (const path of ['/practice', '/practice/dictation']) {
+      const r = await fetch(BASE + path, { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+      assert.ok([303, 307, 308].includes(r.status), path);
+    }
+  });
+
+  test('dictation stats survive and show in the parent summary', async () => {
+    const kid = await login(famA.kid, '5555');
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const dictationStats = { 'd4-1': { c: 1, w: 0, t: 1 }, 'd4-2': { c: 0, w: 2, t: 1 } };
+    assert.equal((await kid('PUT', '/api/me/progress', { data: { ...p.data, dictationStats }, baseVersion: p.version })).status, 200);
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.progress.dictationTried, 2);
+    assert.equal(s.progress.dictationPerfect, 1);
+  });
+});
+
+describe('grammar', () => {
+  test('page is for kids; best scores show for parents', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = await fetch(BASE + '/practice/grammar', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(page.status, 200);
+    assert.ok((await page.text()).includes('am / is / are'));
+    const asParent = await fetch(BASE + '/practice/grammar', { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(asParent.status));
+    const { json: p } = await kid('GET', '/api/me/progress');
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, grammarStats: { be: { c: 7, w: 1, best: 88, t: 1 } } }, baseVersion: p.version });
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.deepEqual(s.progress.grammar, { be: 88 });
+  });
+});
+
+describe('reading comprehension', () => {
+  test('page is for kids; parent summary shows stories and average', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = await fetch(BASE + '/practice/reading', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(page.status, 200);
+    assert.ok((await page.text()).includes('קוראים ומבינים'));
+    const asParent = await fetch(BASE + '/practice/reading', { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(asParent.status));
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const readingStats = { 'g4-zoo': { best: 100, reads: 1, t: 1 }, 'g4-rain': { best: 60, reads: 2, t: 1 } };
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, readingStats }, baseVersion: p.version });
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.progress.storiesRead, 2);
+    assert.equal(s.progress.storiesAvg, 80);
+  });
+});
+
+describe('speaking', () => {
+  test('page is for kids; parent summary shows words said correctly', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = await fetch(BASE + '/practice/speaking', { headers: { Cookie: await cookieOf(kid) } });
+    assert.equal(page.status, 200);
+    assert.ok((await page.text()).includes('אומרים בקול'));
+    const asParent = await fetch(BASE + '/practice/speaking', { headers: { Cookie: await cookieOf(parentA) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(asParent.status));
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const speakingStats = { cat: { ok: 1, tries: 1, t: 1 }, dog: { ok: 0, tries: 3, t: 1 } };
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, speakingStats }, baseVersion: p.version });
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.progress.speakingTried, 2);
+    assert.equal(s.progress.speakingOk, 1);
+  });
+});
+
+describe('per-kid module settings', () => {
+  test('parent turns modules off: pages redirect, hub hides them, daily banner off; other families cannot', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = async (path) => fetch(BASE + path, { headers: { Cookie: await cookieOf(kid) }, redirect: 'manual' });
+
+    assert.equal((await page('/practice/speaking')).status, 200);
+    const r = await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: ['speaking', 'daily', 'not-a-module'] } });
+    assert.equal(r.status, 200);
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.deepEqual(s.settings.disabledModules, ['speaking', 'daily'], 'unknown ids dropped');
+    assert.equal(s.displayName, 'Kid A', 'settings-only update keeps the name');
+
+    const blocked = await page('/practice/speaking');
+    assert.ok([303, 307, 308].includes(blocked.status));
+    assert.ok((blocked.headers.get('location') || '').includes('/practice?off=1'));
+    assert.ok([303, 307, 308].includes((await page('/practice/daily')).status));
+    assert.equal((await page('/practice/grammar')).status, 200, 'other modules still open');
+
+    const hub = await (await page('/practice')).text();
+    assert.ok(!hub.includes('/practice/speaking') && !hub.includes('/practice/daily'));
+    assert.ok(hub.includes('/practice/grammar'));
+
+    assert.equal((await kid('GET', '/api/me/notices')).json.review.count, 0);
+    assert.equal((await kid('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [] } })).status, 403);
+    assert.equal((await parentB('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [] } })).status, 404);
+
+    // turn everything back on
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [] } });
+    assert.equal((await page('/practice/speaking')).status, 200);
+  });
+});
+
+describe('activity log, weekly report, daily goal', () => {
+  test('activity: validated, kids only, aggregated into the report', async () => {
+    const kid = await login(famA.kid, '5555');
+    assert.equal((await kid('POST', '/api/me/activity', { module: 'nope', answers: 1 })).status, 400);
+    assert.equal((await parentA('POST', '/api/me/activity', { module: 'grammar', answers: 1 })).status, 403);
+    assert.equal((await kid('POST', '/api/me/activity', { module: 'dictation', answers: 5, correct: 4, seconds: 300 })).status, 200);
+    assert.equal((await kid('POST', '/api/me/activity', { module: 'dictation', answers: 5, correct: 9, seconds: 99999 })).status, 200);
+
+    const page = await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(parentA) } });
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.ok(html.includes('הדוח השבועי של'));
+    assert.ok(html.includes('הכתבה'), 'module row present');
+    // 300s + capped 3600s = 65 minutes, 10 answers, correct capped at answers -> 9
+    assert.ok(html.includes('65'), 'minutes aggregated with the per-call cap');
+  });
+
+  test('report is private to the family', async () => {
+    const other = await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(parentB) } });
+    assert.equal(other.status, 404);
+    const kid = await login(famA.kid, '5555');
+    const asKid = await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(kid) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(asKid.status));
+    const asAdmin = await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(admin) } });
+    assert.equal(asAdmin.status, 200);
+  });
+
+  test('daily goal: saved, validated, shown in the hub with today\'s minutes', async () => {
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [], dailyGoalMinutes: 7 } });
+    let s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.settings.dailyGoalMinutes, 0, 'only allowed values');
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [], dailyGoalMinutes: 15 } });
+    s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.settings.dailyGoalMinutes, 15);
+    const kid = await login(famA.kid, '5555');
+    const hub = await (await fetch(`${BASE}/practice`, { headers: { Cookie: await cookieOf(kid) } })).text();
+    assert.ok(hub.includes('data-testid="daily-goal"') && hub.includes('aria-valuemax="15"'));
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [], dailyGoalMinutes: 0 } });
+  });
+
+  test('a finished parent check is logged as activity', async () => {
+    const kid = await login(famA.kid, '5555');
+    const { json: p } = await kid('GET', '/api/me/progress');
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, learnedLetters: ['a'] }, baseVersion: p.version });
+    const c = await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 });
+    assert.equal(c.status, 201);
+    const { json } = await kid('GET', '/api/me/check');
+    await kid('POST', `/api/me/check/${json.check.id}/answer`, { index: 0, answer: 'x' });
+    await kid('POST', `/api/me/check/${json.check.id}/finish`);
+    const html = await (await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(parentA) } })).text();
+    assert.ok(html.includes('מבחנים מההורים'));
+  });
+});
+
+describe('coin guard', () => {
+  test('impossible jumps are clamped (per save and per hour), spending is fine, parents are told', async () => {
+    // a fresh kid so earlier tests don't share the hourly budget
+    const r = await parentB('POST', '/api/family/students', { username: `cg_${rnd()}`, displayName: 'Coins', pin: '8642' });
+    const kidId = r.json.id;
+    const name = (await parentB('GET', '/api/family')).json.students.find((s) => s.id === kidId).username;
+    const kid = await login(name, '8642');
+    const put = async (coins) => {
+      const { json: p } = await kid('GET', '/api/me/progress');
+      return kid('PUT', '/api/me/progress', { data: { ...p.data, coins }, baseVersion: p.version });
+    };
+
+    let res = await put(1000);
+    assert.equal(res.status, 200);
+    assert.equal(res.json.coins, 100, 'one save adds at most 100');
+    res = await put(150);
+    assert.equal(res.json.coins, 150, 'normal gains pass');
+    res = await put(40);
+    assert.equal(res.json.coins, 40, 'spending (going down) is always fine');
+    for (const target of [140, 240, 340, 440]) res = await put(target);
+    // hourly budget: 100 + 50 + 4*100 = 550 wanted, only 400 allowed in total
+    assert.equal(res.json.coins, 290, 'hourly cap of 400 gained coins');
+    res = await put(-5);
+    assert.equal(res.json.coins, 290, 'an invalid (negative) value is ignored');
+
+    const html = await (await fetch(`${BASE}/parent/report/${kidId}`, { headers: { Cookie: await cookieOf(parentB) } })).text();
+    assert.ok(html.includes('ניסיונות להוסיף מטבעות'), 'parent sees the warning');
+  });
+});
+
+describe('sight words', () => {
+  test('page is for kids, can be switched off, parent summary', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = await fetch(BASE + '/practice/sight', { headers: { Cookie: await cookieOf(kid) }, redirect: 'manual' });
+    assert.equal(page.status, 200);
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: ['sight'], dailyGoalMinutes: 0 } });
+    const off = await fetch(BASE + '/practice/sight', { headers: { Cookie: await cookieOf(kid) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(off.status));
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [], dailyGoalMinutes: 0 } });
+    const { json: p } = await kid('GET', '/api/me/progress');
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, sightStats: { the: { c: 2, w: 0, t: 1 }, said: { c: 0, w: 1, t: 1 } } }, baseVersion: p.version });
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.progress.sightSeen, 2);
+    assert.equal(s.progress.sightKnown, 1);
   });
 });
