@@ -2,11 +2,13 @@
 
 import { useEffect } from 'react';
 import { LEGACY_MARKUP } from '@/legacy/markup';
+import type { KidSettings } from '@/lib/modules';
 import type { Progress } from '@/lib/progress';
 
 export type LegacyBoot = {
   user: { id: string; username: string; displayName: string };
   progress: Progress | null;
+  settings: KidSettings;
 };
 
 declare global {

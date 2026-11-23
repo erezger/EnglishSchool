@@ -170,4 +170,12 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX coin_adjustments_student_idx ON coin_adjustments (student_id, created_at DESC);
     `,
   },
+  {
+    id: 5,
+    name: 'kid_settings',
+    sql: `
+      -- Per-kid settings chosen by parents (e.g. which practice modules are off).
+      ALTER TABLE users ADD COLUMN settings JSONB NOT NULL DEFAULT '{}'::jsonb;
+    `,
+  },
 ];

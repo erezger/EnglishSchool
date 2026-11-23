@@ -585,3 +585,35 @@ describe('speaking', () => {
     assert.equal(s.progress.speakingOk, 1);
   });
 });
+
+describe('per-kid module settings', () => {
+  test('parent turns modules off: pages redirect, hub hides them, daily banner off; other families cannot', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = async (path) => fetch(BASE + path, { headers: { Cookie: await cookieOf(kid) }, redirect: 'manual' });
+
+    assert.equal((await page('/practice/speaking')).status, 200);
+    const r = await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: ['speaking', 'daily', 'not-a-module'] } });
+    assert.equal(r.status, 200);
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.deepEqual(s.settings.disabledModules, ['speaking', 'daily'], 'unknown ids dropped');
+    assert.equal(s.displayName, 'Kid A', 'settings-only update keeps the name');
+
+    const blocked = await page('/practice/speaking');
+    assert.ok([303, 307, 308].includes(blocked.status));
+    assert.ok((blocked.headers.get('location') || '').includes('/practice?off=1'));
+    assert.ok([303, 307, 308].includes((await page('/practice/daily')).status));
+    assert.equal((await page('/practice/grammar')).status, 200, 'other modules still open');
+
+    const hub = await (await page('/practice')).text();
+    assert.ok(!hub.includes('/practice/speaking') && !hub.includes('/practice/daily'));
+    assert.ok(hub.includes('/practice/grammar'));
+
+    assert.equal((await kid('GET', '/api/me/notices')).json.review.count, 0);
+    assert.equal((await kid('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [] } })).status, 403);
+    assert.equal((await parentB('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [] } })).status, 404);
+
+    // turn everything back on
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [] } });
+    assert.equal((await page('/practice/speaking')).status, 200);
+  });
+});

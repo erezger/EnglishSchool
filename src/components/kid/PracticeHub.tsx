@@ -21,9 +21,10 @@ const TONES: Record<HubItem['tone'], string> = {
   pink: 'from-pink-100 to-rose-50 border-pink-300',
 };
 
-export default function PracticeHub({ displayName, coins, items }: { displayName: string; coins: number; items: HubItem[] }) {
+export default function PracticeHub({ displayName, coins, items, notice }: { displayName: string; coins: number; items: HubItem[]; notice?: string }) {
   return (
     <KidShell title="🎯 תרגולים" displayName={displayName} coins={coins} onHome={() => window.location.assign('/')} wide>
+      {notice && <div className="mb-4 text-sm font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2">{notice}</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {items.map((it) => (
           <a

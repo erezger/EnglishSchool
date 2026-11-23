@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import LegacyApp from '@/components/LegacyApp';
 import { getProgress } from '@/lib/progress';
+import { getKidSettings } from '@/lib/kid-settings';
 import { getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -11,12 +12,13 @@ export default async function HomePage() {
   if (!user) redirect('/login');
   if (user.role !== 'student') redirect('/parent');
 
-  const progress = await getProgress(user.id);
+  const [progress, settings] = await Promise.all([getProgress(user.id), getKidSettings(user.id)]);
   return (
     <LegacyApp
       boot={{
         user: { id: user.id, username: user.username, displayName: user.displayName },
         progress,
+        settings,
       }}
     />
   );

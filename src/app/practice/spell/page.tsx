@@ -4,6 +4,7 @@ import SpellingGame from '@/components/spelling/SpellingGame';
 import { WORD_BANK } from '@/content/wordbank';
 import { query } from '@/lib/db';
 import { getProgress } from '@/lib/progress';
+import { requireModule } from '@/lib/kid-settings';
 import { getCurrentUser } from '@/lib/session';
 import { studentWordLists } from '@/lib/words';
 
@@ -15,6 +16,7 @@ export default async function SpellPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   if (user.role !== 'student' || !user.familyId) redirect('/parent');
+  await requireModule(user.id, 'spell');
 
   const [progress, lists, gradeRow] = await Promise.all([
     getProgress(user.id),

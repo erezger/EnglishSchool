@@ -8,6 +8,7 @@ import { gradeLabel } from '@/content/wordbank';
 const GRAMMAR_TITLES: Record<string, string> = Object.fromEntries(GRAMMAR.map((t) => [t.id, t.title]));
 import { avatarEmoji, petEmoji, TOTAL_LEVELS } from '@/lib/catalog';
 import ChecksAndCoins from './ChecksAndCoins';
+import ModuleSettings from './ModuleSettings';
 import type { StudentSummary } from './types';
 import { Btn, ConfirmWithPassword, ErrorNote, Field, formatDate } from './ui';
 
@@ -192,6 +193,8 @@ export default function StudentCard({
               </Btn>
             </form>
           </div>
+
+          <ModuleSettings student={student} qs={qs} onChanged={onChanged} />
 
           <ChecksAndCoins student={student} qs={qs} onChanged={onChanged} />
 

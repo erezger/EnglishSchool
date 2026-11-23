@@ -6,6 +6,7 @@ import { gradeLabel, WORD_BANK } from '@/content/wordbank';
 import { meaningIndex } from '@/lib/checks';
 import { query } from '@/lib/db';
 import { getProgress } from '@/lib/progress';
+import { requireModule } from '@/lib/kid-settings';
 import { getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,7 @@ export default async function SpeakingPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   if (user.role !== 'student' || !user.familyId) redirect('/parent');
+  await requireModule(user.id, 'speaking');
 
   const [progress, meanings, gradeRow] = await Promise.all([
     getProgress(user.id),
