@@ -234,6 +234,8 @@ const SHOP_THEMES = [
    ========================================================================== */
 const BOOT = (typeof window !== 'undefined' && window.__EC_BOOT__) || {};
 const CURRENT_USER = BOOT.user || { id: 'anonymous', username: '', displayName: '' };
+const KID_SETTINGS = BOOT.settings || { disabledModules: [] };
+const moduleOn = (id) => !(KID_SETTINGS.disabledModules || []).includes(id);
 const API_PROGRESS = '/api/me/progress';
 const API_REWARDS = '/api/me/rewards';
 const API_REDEEM = '/api/me/redemptions';
@@ -698,7 +700,7 @@ function renderPlacementBanner() {
     const existing = document.getElementById('placement-banner');
     let dismissed = false;
     try { dismissed = sessionStorage.getItem('placement_dismissed') === '1'; } catch (e) {}
-    if (passthroughData.placement || state.completedLevels.length >= LEVELS.length || dismissed) {
+    if (!moduleOn('placement') || passthroughData.placement || state.completedLevels.length >= LEVELS.length || dismissed) {
         if (existing) existing.remove();
         return;
     }
@@ -2636,6 +2638,10 @@ function bootstrapApp() {
     const firstOpenLevel = LEVELS.find(l => !state.completedLevels.includes(l.id));
     selectLevel(firstOpenLevel ? firstOpenLevel.id : 1);
     renderPlacementBanner();
+    if (!moduleOn('daily')) {
+        const dailyBtn = document.getElementById('daily-header-btn');
+        if (dailyBtn) dailyBtn.remove();
+    }
     showToast(`שלום ${CURRENT_USER.displayName}! 🌟`, '👋');
     loadNotices();
     setInterval(() => { if (document.visibilityState === 'visible') loadNotices(); }, 60000);

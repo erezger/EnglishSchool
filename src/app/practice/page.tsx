@@ -4,18 +4,26 @@ import PracticeHub, { type HubItem } from '@/components/kid/PracticeHub';
 import { meaningIndex, openCheckFor } from '@/lib/checks';
 import { getProgress } from '@/lib/progress';
 import { dailyReviewOf, planSession, todayStr } from '@/lib/review';
+import { getKidSettings } from '@/lib/kid-settings';
+import { moduleEnabled, type ModuleId } from '@/lib/modules';
 import { getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'תרגולים | אנגלית בקליק PRO' };
 
 /** All practice activities in one place — students only. */
-export default async function PracticePage() {
+export default async function PracticePage({ searchParams }: { searchParams: Promise<{ off?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   if (user.role !== 'student' || !user.familyId) redirect('/parent');
 
-  const [progress, check, meanings] = await Promise.all([getProgress(user.id), openCheckFor(user.id), meaningIndex(user.familyId)]);
+  const [progress, check, meanings, settings] = await Promise.all([
+    getProgress(user.id),
+    openCheckFor(user.id),
+    meaningIndex(user.familyId),
+    getKidSettings(user.id),
+  ]);
+  const { off } = await searchParams;
   const data = progress?.data ?? {};
   const today = todayStr();
   const review = planSession(data, meanings, today);
@@ -39,5 +47,17 @@ export default async function PracticePage() {
     ...(data.placement ? [] : [{ href: '/practice/placement', icon: '🧭', title: 'מבחן מיקום', desc: 'מדלגים על מה שכבר יודעים', tone: 'violet' as const }]),
   ];
 
-  return <PracticeHub displayName={user.displayName} coins={Number(data.coins) || 0} items={items} />;
+  const moduleOf = (href: string) => href.split('/')[2];
+  const visible = items.filter((it) => {
+    const m = moduleOf(it.href);
+    return !m || m === 'check' || moduleEnabled(settings, m as ModuleId);
+  });
+  return (
+    <PracticeHub
+      displayName={user.displayName}
+      coins={Number(data.coins) || 0}
+      items={visible}
+      notice={off ? 'התרגול הזה סגור כרגע (ההורים קבעו) 🙂' : undefined}
+    />
+  );
 }

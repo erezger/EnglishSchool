@@ -4,6 +4,7 @@ import DailyReview from '@/components/review/DailyReview';
 import { meaningIndex } from '@/lib/checks';
 import { getProgress } from '@/lib/progress';
 import { buildExercises, dailyReviewOf, planSession, todayStr } from '@/lib/review';
+import { requireModule } from '@/lib/kid-settings';
 import { getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,7 @@ export default async function DailyPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   if (user.role !== 'student' || !user.familyId) redirect('/parent');
+  await requireModule(user.id, 'daily');
 
   const progress = await getProgress(user.id);
   if (!progress) redirect('/');

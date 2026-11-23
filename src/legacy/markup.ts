@@ -60,7 +60,7 @@ export const LEGACY_MARKUP = String.raw`
                     </div>
 
                     <!-- Daily review (React page) -->
-                    <button onclick="goToPractice('/practice/daily')" class="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-300 text-sky-800 px-3.5 py-2 rounded-2xl font-extrabold text-xs sm:text-sm transition active:scale-95 cursor-pointer" title="חזרה יומית">
+                    <button id="daily-header-btn" onclick="goToPractice('/practice/daily')" class="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-300 text-sky-800 px-3.5 py-2 rounded-2xl font-extrabold text-xs sm:text-sm transition active:scale-95 cursor-pointer" title="חזרה יומית">
                         <span>⏰</span>
                         <span>5 דקות ביום</span>
                     </button>

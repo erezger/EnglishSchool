@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg';
 import { audit } from './audit';
 import { availableToCheck, recentAdjustments, recentChecks } from './checks';
 import { isUuid } from './ids';
+import { cleanSettings } from './modules';
 import { query, withTransaction } from './db';
 import { HttpError, requireUser } from './http';
 import {
@@ -124,13 +125,14 @@ export async function getFamilyOverview(familyId: string) {
       MemberRow & {
         has_secret: boolean;
         grade: number | null;
+        settings: unknown;
         last_login_at: Date | null;
         locked_until: Date | null;
         data: ProgressData | null;
       }
     >(
       `SELECT u.id, u.role, u.username, u.display_name, u.family_id,
-              u.secret_hash IS NOT NULL AS has_secret, u.grade, u.last_login_at, u.locked_until, p.data
+              u.secret_hash IS NOT NULL AS has_secret, u.grade, u.settings, u.last_login_at, u.locked_until, p.data
          FROM users u LEFT JOIN student_progress p ON p.user_id = u.id
         WHERE u.family_id = $1
         ORDER BY u.role DESC, u.created_at`,
@@ -175,6 +177,7 @@ export async function getFamilyOverview(familyId: string) {
       displayName: m.display_name,
       hasPin: m.has_secret,
       grade: m.grade,
+      settings: cleanSettings(m.settings),
       locked: !!m.locked_until && new Date(m.locked_until).getTime() > now,
       lastLoginAt: m.last_login_at?.toISOString() ?? null,
       progress: summarize(m.data ?? undefined),
@@ -276,13 +279,15 @@ export async function createGuardian(
 export async function updateStudent(actor: SessionUser, member: MemberRow, body: Record<string, unknown>) {
   const displayName = body.displayName === undefined ? null : requireDisplayName(body.displayName);
   const setGrade = body.grade !== undefined;
+  const settings = body.settings === undefined ? null : JSON.stringify(cleanSettings(body.settings));
   const grade = setGrade ? cleanGrade(body.grade) : null;
   await query(
-    `UPDATE users SET display_name = COALESCE($2, display_name), grade = CASE WHEN $3 THEN $4::smallint ELSE grade END
+    `UPDATE users SET display_name = COALESCE($2, display_name), grade = CASE WHEN $3 THEN $4::smallint ELSE grade END,
+            settings = COALESCE($5::jsonb, settings)
       WHERE id = $1`,
-    [member.id, displayName, setGrade, grade],
+    [member.id, displayName, setGrade, grade, settings],
   );
-  await audit(actor.id, 'user.update', member.id, { displayName, grade });
+  await audit(actor.id, 'user.update', member.id, { displayName, grade, settings: settings ? JSON.parse(settings) : undefined });
 }
 
 export async function setStudentPin(actor: SessionUser, student: MemberRow, pin: unknown) {
