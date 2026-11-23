@@ -14,13 +14,14 @@ const RETRY_MS = 5000;
  * meanwhile (409: another device, a parent reset) they are re-applied on top of it
  * instead of overwriting it.
  */
-export function useProgress(initial: { data: ProgressData; version: number }) {
+export function useProgress(initial: { data: ProgressData; version: number }, options: { pollMs?: number } = {}) {
   const base = useRef(initial);
   const pending = useRef<Op[]>([]);
   const saving = useRef(false);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [data, setData] = useState<ProgressData>(initial.data);
   const [status, setStatus] = useState<SaveStatus>('saved');
+  const [remoteChanges, setRemoteChanges] = useState(0); // bumps when another device / a parent changed progress
 
   const current = () => pending.current.reduce((d, op) => op(d), base.current.data);
 
@@ -104,5 +105,35 @@ export function useProgress(initial: { data: ProgressData; version: number }) {
     };
   }, [flush]);
 
-  return { data, status, mutate, flush, hasPending: () => pending.current.length > 0 };
+  // Optional polling: adopt changes made elsewhere when we have nothing unsaved
+  useEffect(() => {
+    if (!options.pollMs) return;
+    const check = async () => {
+      if (document.visibilityState !== 'visible' || inflight.current || pending.current.length) return;
+      try {
+        const res = await fetch('/api/me/progress', { cache: 'no-store' });
+        if (res.status === 401) {
+          window.location.href = '/login?expired=1';
+          return;
+        }
+        if (!res.ok) return;
+        const server = (await res.json()) as { data: ProgressData; version: number };
+        if (server.version > base.current.version && !inflight.current && !pending.current.length) {
+          base.current = { data: server.data, version: server.version };
+          setData(server.data);
+          setRemoteChanges((n) => n + 1);
+        }
+      } catch {
+        /* offline: try again next tick */
+      }
+    };
+    const t = setInterval(check, options.pollMs);
+    window.addEventListener('focus', check);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('focus', check);
+    };
+  }, [options.pollMs]);
+
+  return { data, status, mutate, flush, remoteChanges, hasPending: () => pending.current.length > 0 };
 }
