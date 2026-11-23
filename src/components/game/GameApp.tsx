@@ -4,12 +4,15 @@ import { useEffect } from 'react';
 import type { KidSettings } from '@/lib/modules';
 import type { ProgressData } from '@/lib/use-progress';
 import BlendTab from './BlendTab';
+import ChallengesTab from './ChallengesTab';
 import { Effects } from './Effects';
 import { GameProvider, useGame } from './GameContext';
 import Header from './Header';
 import LearnTab from './LearnTab';
 import { LevelBanner, LevelSelector } from './Levels';
 import { AbcBoardModal, VoiceModal } from './Modals';
+import QuizTab from './QuizTab';
+import SentencesLevel from './SentencesLevel';
 import SpellBuilderTab from './SpellBuilderTab';
 
 const THEMES = ['theme-classic', 'theme-unicorn', 'theme-ocean', 'theme-space', 'theme-neon'];
@@ -59,10 +62,12 @@ function Shell() {
 
 function TabContent() {
   const g = useGame();
-  if (g.level.isSentenceLevel && g.tab !== 'challenges') return <Placeholder what="שלב המשפטים" />;
+  if (g.tab === 'challenges') return <ChallengesTab key={g.level.id} />;
+  if (g.level.isSentenceLevel) return <SentencesLevel />;
   if (g.tab === 'learn') return <LearnTab />;
   if (g.tab === 'blend') return <BlendTab key={g.level.id} />;
   if (g.tab === 'spell') return <SpellBuilderTab key={g.level.id} />;
+  if (g.tab === 'quiz') return <QuizTab key={g.level.id} />;
   return <Placeholder what="הלשונית הזו" />;
 }
 
