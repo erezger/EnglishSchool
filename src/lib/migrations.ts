@@ -178,4 +178,20 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE users ADD COLUMN settings JSONB NOT NULL DEFAULT '{}'::jsonb;
     `,
   },
+  {
+    id: 6,
+    name: 'activity_log',
+    sql: `
+      -- Practice activity per kid, per day (Israel date), per module. Rows are incremented.
+      CREATE TABLE activity (
+        student_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        day         DATE NOT NULL,
+        module      TEXT NOT NULL,
+        answers     INT NOT NULL DEFAULT 0,
+        correct     INT NOT NULL DEFAULT 0,
+        seconds     INT NOT NULL DEFAULT 0,
+        PRIMARY KEY (student_id, day, module)
+      );
+    `,
+  },
 ];

@@ -644,6 +644,7 @@ function initCloudStorage() {
 }
 
 async function switchUser() {
+    flushGameActivity();
     try {
         if (hasUnsavedChanges || dirtyWhileOffline) await Promise.race([pushProgress(), new Promise(r => setTimeout(r, 3000))]);
         await flushSaves();
@@ -790,7 +791,35 @@ function showCoinAdjustments(list) {
     };
 }
 
+/* ---------- activity log for the parent report (answers + active minutes) ---------- */
+const gameActivity = { answers: 0, correct: 0, seconds: 0 };
+let lastInteraction = Date.now();
+['click', 'keydown', 'pointerdown'].forEach((ev) => document.addEventListener(ev, () => { lastInteraction = Date.now(); }, { passive: true }));
+setInterval(() => {
+    // count time only while the game is visible and someone touched it in the last minute
+    if (document.visibilityState === 'visible' && Date.now() - lastInteraction < 60000) gameActivity.seconds += 15;
+}, 15000);
+
+function flushGameActivity() {
+    if (!gameActivity.answers && gameActivity.seconds < 15) return;
+    const payload = { module: 'game', answers: gameActivity.answers, correct: gameActivity.correct, seconds: gameActivity.seconds };
+    gameActivity.answers = 0;
+    gameActivity.correct = 0;
+    gameActivity.seconds = 0;
+    fetch('/api/me/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true
+    }).catch(() => {});
+}
+setInterval(flushGameActivity, 120000);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushGameActivity();
+});
+
 window.goToPractice = async function(path) {
+    flushGameActivity();
     try {
         if (hasUnsavedChanges || dirtyWhileOffline) await Promise.race([pushProgress(), new Promise(r => setTimeout(r, 3000))]);
         await flushSaves();
@@ -1021,6 +1050,8 @@ function spawnFloatingCoin(amount) {
 
 function awardCoins(amount, toastMessage = '') {
     if (!amount || amount <= 0) return;
+    gameActivity.answers++;
+    gameActivity.correct++;
     state.coins = (Number(state.coins) || 0) + amount;
     playSfx('coin');
     spawnFloatingCoin(amount);
@@ -1047,6 +1078,7 @@ function markWordAsRead(word, withCoinReward = false) {
 
 function recordMistake(word) {
     if (!word) return;
+    gameActivity.answers++;
     const normalized = String(word).toLowerCase();
     if (ALL_WORDS_MAP[normalized] && !state.mistakes.includes(normalized)) {
         state.mistakes.push(normalized);

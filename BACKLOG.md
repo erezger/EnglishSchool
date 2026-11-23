@@ -11,6 +11,7 @@
 - Reading comprehension stories (PR #10)
 - Speaking practice with speech recognition (PR #11)
 - Per-kid module on/off settings (PR #12)
+- Activity log, weekly parent report, daily goal (PR #13)
 
 Ideas and requests not built yet, roughly by priority. Move an item to a branch/PR when work starts.
 
@@ -24,8 +25,6 @@ Ideas and requests not built yet, roughly by priority. Move an item to a branch/
 
 ## Parents
 
-- Weekly progress report per skill (weak words, time practiced, trends).
-- Per-kid daily goal (needs the activity log from the weekly report).
 
 ## Tech
 

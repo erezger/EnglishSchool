@@ -617,3 +617,57 @@ describe('per-kid module settings', () => {
     assert.equal((await page('/practice/speaking')).status, 200);
   });
 });
+
+describe('activity log, weekly report, daily goal', () => {
+  test('activity: validated, kids only, aggregated into the report', async () => {
+    const kid = await login(famA.kid, '5555');
+    assert.equal((await kid('POST', '/api/me/activity', { module: 'nope', answers: 1 })).status, 400);
+    assert.equal((await parentA('POST', '/api/me/activity', { module: 'grammar', answers: 1 })).status, 403);
+    assert.equal((await kid('POST', '/api/me/activity', { module: 'dictation', answers: 5, correct: 4, seconds: 300 })).status, 200);
+    assert.equal((await kid('POST', '/api/me/activity', { module: 'dictation', answers: 5, correct: 9, seconds: 99999 })).status, 200);
+
+    const page = await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(parentA) } });
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.ok(html.includes('הדוח השבועי של'));
+    assert.ok(html.includes('הכתבה'), 'module row present');
+    // 300s + capped 3600s = 65 minutes, 10 answers, correct capped at answers -> 9
+    assert.ok(html.includes('65'), 'minutes aggregated with the per-call cap');
+  });
+
+  test('report is private to the family', async () => {
+    const other = await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(parentB) } });
+    assert.equal(other.status, 404);
+    const kid = await login(famA.kid, '5555');
+    const asKid = await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(kid) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(asKid.status));
+    const asAdmin = await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(admin) } });
+    assert.equal(asAdmin.status, 200);
+  });
+
+  test('daily goal: saved, validated, shown in the hub with today\'s minutes', async () => {
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [], dailyGoalMinutes: 7 } });
+    let s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.settings.dailyGoalMinutes, 0, 'only allowed values');
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [], dailyGoalMinutes: 15 } });
+    s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.settings.dailyGoalMinutes, 15);
+    const kid = await login(famA.kid, '5555');
+    const hub = await (await fetch(`${BASE}/practice`, { headers: { Cookie: await cookieOf(kid) } })).text();
+    assert.ok(hub.includes('data-testid="daily-goal"') && hub.includes('aria-valuemax="15"'));
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [], dailyGoalMinutes: 0 } });
+  });
+
+  test('a finished parent check is logged as activity', async () => {
+    const kid = await login(famA.kid, '5555');
+    const { json: p } = await kid('GET', '/api/me/progress');
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, learnedLetters: ['a'] }, baseVersion: p.version });
+    const c = await parentA('POST', `/api/family/students/${kidAId}/checks`, { scopes: ['letters'], size: 5 });
+    assert.equal(c.status, 201);
+    const { json } = await kid('GET', '/api/me/check');
+    await kid('POST', `/api/me/check/${json.check.id}/answer`, { index: 0, answer: 'x' });
+    await kid('POST', `/api/me/check/${json.check.id}/finish`);
+    const html = await (await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(parentA) } })).text();
+    assert.ok(html.includes('מבחנים מההורים'));
+  });
+});

@@ -34,7 +34,7 @@ export type StudentSummary = {
     speakingOk: number;
   };
   grade: number | null;
-  settings: { disabledModules: string[] };
+  settings: { disabledModules: string[]; dailyGoalMinutes: number };
   rewards: { id: string; title: string; cost: number }[];
   checks: {
     id: string;

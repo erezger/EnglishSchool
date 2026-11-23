@@ -4,6 +4,7 @@ import PracticeHub, { type HubItem } from '@/components/kid/PracticeHub';
 import { meaningIndex, openCheckFor } from '@/lib/checks';
 import { getProgress } from '@/lib/progress';
 import { dailyReviewOf, planSession, todayStr } from '@/lib/review';
+import { minutesToday } from '@/lib/activity';
 import { getKidSettings } from '@/lib/kid-settings';
 import { moduleEnabled, type ModuleId } from '@/lib/modules';
 import { getCurrentUser } from '@/lib/session';
@@ -23,6 +24,7 @@ export default async function PracticePage({ searchParams }: { searchParams: Pro
     meaningIndex(user.familyId),
     getKidSettings(user.id),
   ]);
+  const todayMinutes = settings.dailyGoalMinutes ? await minutesToday(user.id) : 0;
   const { off } = await searchParams;
   const data = progress?.data ?? {};
   const today = todayStr();
@@ -57,6 +59,7 @@ export default async function PracticePage({ searchParams }: { searchParams: Pro
       displayName={user.displayName}
       coins={Number(data.coins) || 0}
       items={visible}
+      goal={settings.dailyGoalMinutes ? { minutes: todayMinutes, target: settings.dailyGoalMinutes } : undefined}
       notice={off ? 'התרגול הזה סגור כרגע (ההורים קבעו) 🙂' : undefined}
     />
   );

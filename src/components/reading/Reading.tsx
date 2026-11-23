@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { STORIES, glossFor, tokenize, type Story } from '@/content/stories';
 import { gradeLabel } from '@/content/wordbank';
 import { speak, stopSpeaking, warmUpVoices } from '@/lib/speech';
+import { useRoundActivity } from '@/lib/use-activity';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import { KidPanel, KidShell, ProgressDots } from '../kid/KidShell';
 
@@ -39,12 +40,14 @@ export default function Reading({
   const [qIndex, setQIndex] = useState(0);
   const [right, setRight] = useState(0);
   const [earned, setEarned] = useState(0);
+  const [runId, setRunId] = useState(0);
   const stats = statsOf(data);
 
   useEffect(() => warmUpVoices(), []);
 
   function open(s: Story) {
     setStory(s);
+    setRunId((r) => r + 1);
     setPhase('read');
     setQIndex(0);
     setRight(0);
@@ -73,6 +76,8 @@ export default function Reading({
     });
     setPhase('done');
   }
+
+  useRoundActivity('reading', runId, phase === 'done', story?.questions.length ?? 0, right);
 
   async function goHome() {
     stopSpeaking();

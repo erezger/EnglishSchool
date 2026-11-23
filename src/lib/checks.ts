@@ -1,5 +1,6 @@
 import { LETTERS, PHONICS_WORDS } from '@/content/phonics';
 import { WORD_BANK } from '@/content/wordbank';
+import { recordActivity } from './activity';
 import { audit } from './audit';
 import { query, withTransaction } from './db';
 import { isUuid } from './ids';
@@ -325,6 +326,9 @@ export async function finishCheck(studentId: string, checkId: string) {
         WHERE id = $1`,
       [checkId, JSON.stringify(results), score, coins],
     );
+    const startedRow = await client.query<{ secs: string | null }>('SELECT EXTRACT(EPOCH FROM (now() - started_at)) AS secs FROM checks WHERE id = $1', [checkId]);
+    const seconds = Math.min(Math.round(Number(startedRow.rows[0]?.secs ?? 0)), check.total * 120);
+    await recordActivity(studentId, { module: 'check', answers: check.total, correct: score, seconds }, client);
     return { score, total: check.total, coins, results };
   });
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { GRAMMAR, GRAMMAR_ROUND, type GrammarQuestion, type GrammarTopic } from '@/content/grammar';
 import { speak, stopSpeaking, warmUpVoices } from '@/lib/speech';
+import { useRoundActivity } from '@/lib/use-activity';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import { KidPanel, KidShell, ProgressDots } from '../kid/KidShell';
 
@@ -69,6 +70,8 @@ export default function GrammarGame({ displayName, progress }: { displayName: st
     });
     setPhase('done');
   }
+
+  useRoundActivity('grammar', round, phase === 'done', round.length, right);
 
   async function goHome() {
     stopSpeaking();

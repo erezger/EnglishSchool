@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { DAILY_BONUS, nextDaily, nextStat, reviewStatsOf, type ReviewExercise } from '@/lib/review';
 import { speak, speakLetter, spellOut, stopSpeaking, warmUpVoices } from '@/lib/speech';
+import { useRoundActivity } from '@/lib/use-activity';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 
 type Answer = { key: string; label: string; correct: boolean };
@@ -82,6 +83,7 @@ export default function DailyReview({
 
   const ex = exercises[index];
   const right = answers.filter((a) => a.correct).length;
+  useRoundActivity('daily', exercises, phase === 'done', answers.length, right);
 
   return (
     <div className="max-w-2xl mx-auto px-3 sm:px-5 py-4 sm:py-6 pb-16">

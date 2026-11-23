@@ -8,6 +8,8 @@ import { createSession, destroySession, pruneExpiredSessions, type Role } from '
 
 export const dynamic = 'force-dynamic';
 
+/** Login attempts per IP per 10 minutes (raise only for automated test runs). */
+const LOGIN_IP_LIMIT = Number(process.env.LOGIN_IP_LIMIT) || 30;
 const MAX_FAILS_BEFORE_LOCK = 5;
 const BASE_LOCK_MINUTES = 5;
 const MAX_LOCK_MINUTES = 60;
@@ -26,7 +28,7 @@ const BAD_CREDENTIALS = new HttpError(401, 'bad_credentials', 'שם משתמש �
 
 /** POST /api/auth/login  { username, secret }  — secret is the 4-digit PIN (kids) or password (parents). */
 export const POST = route(async (req) => {
-  if (!allow(`login:ip:${clientIp(req)}`, 30, 10 * 60_000)) {
+  if (!allow(`login:ip:${clientIp(req)}`, LOGIN_IP_LIMIT, 10 * 60_000)) {
     throw new HttpError(429, 'rate_limited', 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות');
   }
 
