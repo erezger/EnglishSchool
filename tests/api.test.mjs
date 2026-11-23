@@ -701,3 +701,20 @@ describe('coin guard', () => {
     assert.ok(html.includes('ניסיונות להוסיף מטבעות'), 'parent sees the warning');
   });
 });
+
+describe('sight words', () => {
+  test('page is for kids, can be switched off, parent summary', async () => {
+    const kid = await login(famA.kid, '5555');
+    const page = await fetch(BASE + '/practice/sight', { headers: { Cookie: await cookieOf(kid) }, redirect: 'manual' });
+    assert.equal(page.status, 200);
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: ['sight'], dailyGoalMinutes: 0 } });
+    const off = await fetch(BASE + '/practice/sight', { headers: { Cookie: await cookieOf(kid) }, redirect: 'manual' });
+    assert.ok([303, 307, 308].includes(off.status));
+    await parentA('PATCH', `/api/family/students/${kidAId}`, { settings: { disabledModules: [], dailyGoalMinutes: 0 } });
+    const { json: p } = await kid('GET', '/api/me/progress');
+    await kid('PUT', '/api/me/progress', { data: { ...p.data, sightStats: { the: { c: 2, w: 0, t: 1 }, said: { c: 0, w: 1, t: 1 } } }, baseVersion: p.version });
+    const s = (await parentA('GET', '/api/family')).json.students.find((x) => x.id === kidAId);
+    assert.equal(s.progress.sightSeen, 2);
+    assert.equal(s.progress.sightKnown, 1);
+  });
+});

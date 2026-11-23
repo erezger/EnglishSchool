@@ -198,7 +198,13 @@ export function summarize(data: ProgressData | undefined) {
     grammar: grammarSummary(data?.grammarStats),
     ...readingSummary(data?.readingStats),
     ...speakingSummary(data?.speakingStats),
+    ...sightSummary(data?.sightStats),
   };
+}
+
+function sightSummary(raw: unknown) {
+  const stats = raw && typeof raw === 'object' ? Object.values(raw as Record<string, { c?: number; w?: number }>) : [];
+  return { sightSeen: stats.length, sightKnown: stats.filter((s) => (s?.c ?? 0) > (s?.w ?? 0)).length };
 }
 
 function speakingSummary(raw: unknown) {
