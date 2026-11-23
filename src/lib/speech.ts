@@ -2,7 +2,7 @@
 
 /**
  * Browser text-to-speech for English practice (Web Speech API).
- * Same letter-name spellings the original game uses (src/legacy/app.js LETTER_BANK).
+ * Same letter-name spellings the original game uses (src/content/game.ts LETTER_BANK).
  */
 export const LETTER_NAMES: Record<string, string> = {
   a: 'Ay', b: 'Bee', c: 'See', d: 'Dee', e: 'Ee', f: 'Eff', g: 'Jee', h: 'Aitch', i: 'Eye', j: 'Jay',

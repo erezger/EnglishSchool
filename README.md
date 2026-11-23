@@ -1,8 +1,8 @@
 # אנגלית בקליק PRO
 
 Next.js 16 + Postgres. Kids learn English phonics; parents/teachers manage kids, rewards and resets.
-The original Gemini single-file app (`code_artifact.html`) is kept for reference; its game UI runs
-unchanged from `src/legacy`.
+The original Gemini single-file app (`code_artifact.html`) is kept for reference; the game is a 1:1
+React rewrite of it (`src/components/game`), with all content in `src/content/game.ts`.
 
 ## Accounts & permissions
 
@@ -29,8 +29,9 @@ src/app/api/admin/families               admin: list/create families
 src/lib/migrations.ts                    append-only schema migrations (applied automatically at startup)
 src/lib/bootstrap.ts                     one-time import of pre-auth data + first admin from env
 src/lib/{session,http,family,rewards,progress,passwords}.ts
-src/components/                          LoginForm, parent dashboard, admin page, LegacyApp (game shell)
-src/legacy/                              original game markup + logic
+src/components/game/                     the main game (letters, blender, build-a-word, quiz, challenges, sentences, shop)
+src/components/{kid,parent,report}/      practice modules, parent dashboard, weekly report
+src/content/                             game content (game.ts = source of truth; phonics.ts derives from it), word bank, stories...
 tests/api.test.mjs                       authorization & flow tests (run against a non-production server)
 ```
 

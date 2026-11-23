@@ -14,6 +14,8 @@
 - Activity log, weekly parent report, daily goal (PR #13)
 - Server-side coin guard: caps per save and per hour, audit + parent warning (PR #14)
 - Sight-words speed reading (PR #15)
+- Off-server copies of DB backups (PR #16)
+- Main game rewritten in React, `src/legacy` removed (PRs #17–#20)
 
 Ideas and requests not built yet, roughly by priority. Move an item to a branch/PR when work starts.
 
@@ -29,6 +31,4 @@ Ideas and requests not built yet, roughly by priority. Move an item to a branch/
 
 ## Tech
 
-- Split the rest of `src/legacy` into React components (spelling is the first React game page).
-- Off-server copies of DB backups (e.g. Oracle Object Storage).
-- Full server-side coin accounting (would need the original game rewritten; today a server-side cap per save/hour limits abuse).
+- Full server-side coin accounting (each reward granted by an API call instead of the client saving its balance). Now possible since the game is React; today a server-side cap per save/hour limits abuse.
