@@ -146,13 +146,13 @@ describe('student permissions', () => {
     const { json: p } = await kidA('GET', '/api/me/progress');
     assert.equal(p.data.coins, 0);
     const save = await kidA('PUT', '/api/me/progress', {
-      data: { ...p.data, coins: 300, parentRewards: [{ title: 'hack', cost: 1 }] },
+      data: { ...p.data, coins: 90, parentRewards: [{ title: 'hack', cost: 1 }] },
       baseVersion: p.version,
     });
     assert.equal(save.status, 200);
     const stale = await kidA('PUT', '/api/me/progress', { data: { ...p.data, coins: 1 }, baseVersion: p.version });
     assert.equal(stale.status, 409, 'stale write rejected');
-    assert.equal(stale.json.current.data.coins, 300);
+    assert.equal(stale.json.current.data.coins, 90);
     assert.equal(stale.json.current.data.parentRewards, undefined);
   });
 });
@@ -669,5 +669,35 @@ describe('activity log, weekly report, daily goal', () => {
     await kid('POST', `/api/me/check/${json.check.id}/finish`);
     const html = await (await fetch(`${BASE}/parent/report/${kidAId}`, { headers: { Cookie: await cookieOf(parentA) } })).text();
     assert.ok(html.includes('מבחנים מההורים'));
+  });
+});
+
+describe('coin guard', () => {
+  test('impossible jumps are clamped (per save and per hour), spending is fine, parents are told', async () => {
+    // a fresh kid so earlier tests don't share the hourly budget
+    const r = await parentB('POST', '/api/family/students', { username: `cg_${rnd()}`, displayName: 'Coins', pin: '8642' });
+    const kidId = r.json.id;
+    const name = (await parentB('GET', '/api/family')).json.students.find((s) => s.id === kidId).username;
+    const kid = await login(name, '8642');
+    const put = async (coins) => {
+      const { json: p } = await kid('GET', '/api/me/progress');
+      return kid('PUT', '/api/me/progress', { data: { ...p.data, coins }, baseVersion: p.version });
+    };
+
+    let res = await put(1000);
+    assert.equal(res.status, 200);
+    assert.equal(res.json.coins, 100, 'one save adds at most 100');
+    res = await put(150);
+    assert.equal(res.json.coins, 150, 'normal gains pass');
+    res = await put(40);
+    assert.equal(res.json.coins, 40, 'spending (going down) is always fine');
+    for (const target of [140, 240, 340, 440]) res = await put(target);
+    // hourly budget: 100 + 50 + 4*100 = 550 wanted, only 400 allowed in total
+    assert.equal(res.json.coins, 290, 'hourly cap of 400 gained coins');
+    res = await put(-5);
+    assert.equal(res.json.coins, 290, 'an invalid (negative) value is ignored');
+
+    const html = await (await fetch(`${BASE}/parent/report/${kidId}`, { headers: { Cookie: await cookieOf(parentB) } })).text();
+    assert.ok(html.includes('ניסיונות להוסיף מטבעות'), 'parent sees the warning');
   });
 });

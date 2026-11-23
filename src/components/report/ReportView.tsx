@@ -36,6 +36,11 @@ export default function ReportView({ name, report, backHref }: { name: string; r
         </a>
       </header>
 
+      {report.suspiciousCoins > 0 && (
+        <div role="alert" className="text-sm font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded-2xl px-4 py-3">
+          ⚠️ השבוע היו {report.suspiciousCoins} ניסיונות להוסיף מטבעות בקפיצה לא רגילה – השרת הגביל אותם. אולי שווה שיחה קטנה 🙂
+        </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Tile label="דקות תרגול" value={String(totalMinutes)} />
         <Tile label="ימים פעילים" value={`${activeDays} מתוך 7`} />

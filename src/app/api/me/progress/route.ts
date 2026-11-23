@@ -26,5 +26,5 @@ export const PUT = route(async (req) => {
 
   const result = await saveProgressIfVersion(student.id, data as Record<string, unknown>, baseVersion);
   if (!result.ok) return json({ error: 'conflict', current: result.current }, 409);
-  return json({ version: result.version });
+  return json({ version: result.version, coins: result.coins });
 });

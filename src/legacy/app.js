@@ -518,6 +518,10 @@ function pushProgress({ keepalive = false } = {}) {
                 if (!res.ok) throw new Error(`שגיאת שמירה (${res.status})`);
                 const json = await res.json();
                 serverVersion = Number(json.version) || serverVersion;
+                if (typeof json.coins === 'number' && json.coins < state.coins && !rerunSave) {
+                    state.coins = json.coins; // the server capped an impossible jump
+                    updateHeaderUI();
+                }
             } while (rerunSave);
             dirtyWhileOffline = false;
             cloudConnected = true;
