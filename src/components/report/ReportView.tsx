@@ -7,6 +7,7 @@ import type { Report } from '@/lib/report';
 const MODULE_NAMES: Record<string, string> = {
   ...Object.fromEntries(MODULES.map((m) => [m.id, `${m.icon} ${m.title}`])),
   game: '🎮 המשחק (אותיות ומילים)',
+  sight: '⚡ קריאה מהירה',
   check: '📝 מבחנים מההורים',
 };
 const DAY_NAMES = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];

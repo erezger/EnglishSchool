@@ -9,6 +9,7 @@ export const MODULES = [
   { id: 'reading', title: 'קוראים ומבינים', icon: '📖' },
   { id: 'speaking', title: 'אומרים בקול (מיקרופון)', icon: '🎤' },
   { id: 'grammar', title: 'דקדוק', icon: '📘' },
+  { id: 'sight', title: 'קריאה מהירה', icon: '⚡' },
   { id: 'placement', title: 'מבחן מיקום', icon: '🧭' },
 ] as const;
 

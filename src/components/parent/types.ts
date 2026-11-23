@@ -32,6 +32,8 @@ export type StudentSummary = {
     storiesAvg: number;
     speakingTried: number;
     speakingOk: number;
+    sightSeen: number;
+    sightKnown: number;
   };
   grade: number | null;
   settings: { disabledModules: string[]; dailyGoalMinutes: number };

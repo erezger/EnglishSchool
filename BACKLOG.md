@@ -13,6 +13,7 @@
 - Per-kid module on/off settings (PR #12)
 - Activity log, weekly parent report, daily goal (PR #13)
 - Server-side coin guard: caps per save and per hour, audit + parent warning (PR #14)
+- Sight-words speed reading (PR #15)
 
 Ideas and requests not built yet, roughly by priority. Move an item to a branch/PR when work starts.
 
@@ -21,7 +22,6 @@ Ideas and requests not built yet, roughly by priority. Move an item to a branch/
 
 ## Learning content
 
-- Sight-words track (the, said, because, friend…) as its own game modes (partly in the grade 4 bank).
 - More subjects later (content-driven, so a subject is mostly data, not code).
 
 ## Parents
