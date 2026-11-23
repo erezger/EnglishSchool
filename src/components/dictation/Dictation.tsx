@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { compareSentence, type WordResult } from '@/content/dictation';
 import { speak, stopSpeaking, warmUpVoices } from '@/lib/speech';
+import { useRoundActivity } from '@/lib/use-activity';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import { KidPanel, KidShell, ProgressDots } from '../kid/KidShell';
 
@@ -76,6 +77,7 @@ export default function Dictation({
   }
 
   const finished = source && index >= round.length;
+  useRoundActivity('dictation', round, !!finished, results.length, results.filter((r) => r.wrong === 0).length);
 
   return (
     <KidShell title="✍️ הכתבה" displayName={displayName} coins={Number(data.coins) || 0} status={status} onHome={goHome}>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gradeLabel, type BankTopic } from '@/content/wordbank';
 import { setPreferredVoice, speak, speakLetter, speechSupported, spellOut, stopSpeaking, warmUpVoices } from '@/lib/speech';
+import { useRoundActivity } from '@/lib/use-activity';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import type { WordList } from '@/lib/words';
 
@@ -201,6 +202,8 @@ export default function SpellingGame({
     },
     [mutate],
   );
+
+  useRoundActivity('spell', round, screen === 'done', results.length, results.filter((r) => r.correct).length);
 
   async function goHome() {
     stopSpeaking();

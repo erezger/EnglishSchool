@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { heardTarget, listenOnce, recognitionSupported, stopListening } from '@/lib/speech-recognition';
 import { speak, stopSpeaking, warmUpVoices } from '@/lib/speech';
+import { useRoundActivity } from '@/lib/use-activity';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import { KidPanel, KidShell, ProgressDots } from '../kid/KidShell';
 
@@ -71,6 +72,7 @@ export default function Speaking({
   }
 
   const finished = source && index >= round.length;
+  useRoundActivity('speaking', round, !!finished, results.length, results.filter(Boolean).length);
 
   return (
     <KidShell title="🎤 אומרים בקול" displayName={displayName} coins={Number(data.coins) || 0} status={status} onHome={goHome}>

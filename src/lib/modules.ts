@@ -13,16 +13,18 @@ export const MODULES = [
 ] as const;
 
 export type ModuleId = (typeof MODULES)[number]['id'];
-export type KidSettings = { disabledModules: ModuleId[] };
+export const GOAL_OPTIONS = [0, 5, 10, 15, 20, 30] as const;
+export type KidSettings = { disabledModules: ModuleId[]; dailyGoalMinutes: number };
 
 const IDS = MODULES.map((m) => m.id) as readonly string[];
 
 export function cleanSettings(raw: unknown): KidSettings {
-  const r = (raw && typeof raw === 'object' ? raw : {}) as { disabledModules?: unknown };
+  const r = (raw && typeof raw === 'object' ? raw : {}) as { disabledModules?: unknown; dailyGoalMinutes?: unknown };
   const disabled = Array.isArray(r.disabledModules)
     ? [...new Set(r.disabledModules.filter((m): m is ModuleId => typeof m === 'string' && IDS.includes(m)))]
     : [];
-  return { disabledModules: disabled };
+  const goal = Number(r.dailyGoalMinutes);
+  return { disabledModules: disabled, dailyGoalMinutes: (GOAL_OPTIONS as readonly number[]).includes(goal) ? goal : 0 };
 }
 
 export function moduleEnabled(settings: KidSettings, id: ModuleId): boolean {

@@ -81,6 +81,9 @@ export default function StudentCard({
           </div>
           <div className="text-xs text-slate-500 mt-0.5">כניסה אחרונה: {formatDate(student.lastLoginAt)}</div>
         </div>
+        <a href={`/parent/report/${student.id}`} className="px-3 py-2 rounded-xl text-sm font-extrabold text-indigo-700 hover:bg-indigo-50">
+          📊 דוח שבועי
+        </a>
         <Btn variant="ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
           {open ? 'סגור ▲' : 'ניהול ▼'}
         </Btn>

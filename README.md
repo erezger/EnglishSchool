@@ -96,5 +96,5 @@ npm install
 cp .env.example .env            # same password in POSTGRES_PASSWORD and DATABASE_URL; COOKIE_SECURE=false
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db   # Postgres on 127.0.0.1:5433
 npm run dev                     # http://localhost:3000
-npm test                        # with the app running; uses BASE_URL / ADMIN_USERNAME / ADMIN_PASSWORD
+npm test                        # app running with LOGIN_IP_LIMIT=1000; uses BASE_URL / ADMIN_USERNAME / ADMIN_PASSWORD
 ```
