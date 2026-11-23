@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { GRAMMAR, GRAMMAR_ROUND, type GrammarQuestion, type GrammarTopic } from '@/content/grammar';
 import { speak, stopSpeaking, warmUpVoices } from '@/lib/speech';
 import { useRoundActivity } from '@/lib/use-activity';
+import { payDaily } from '@/lib/earning';
+import { useEarnToday } from '@/lib/use-earn';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import { KidPanel, KidShell, ProgressDots } from '../kid/KidShell';
 
@@ -22,12 +24,14 @@ function shuffle<T>(arr: T[]): T[] {
 
 export default function GrammarGame({ displayName, progress }: { displayName: string; progress: { data: ProgressData; version: number } }) {
   const { data, mutate, flush, status } = useProgress(progress);
+  const earnToday = useEarnToday(data);
   const [topic, setTopic] = useState<GrammarTopic | null>(null);
   const [phase, setPhase] = useState<'pick' | 'rule' | 'run' | 'done'>('pick');
   const [round, setRound] = useState<GrammarQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [right, setRight] = useState(0);
   const [bonus, setBonus] = useState(0);
+  const [earned, setEarned] = useState(0);
   const stats = statsOf(data);
 
   useEffect(() => warmUpVoices(), []);
@@ -43,12 +47,19 @@ export default function GrammarGame({ displayName, progress }: { displayName: st
     setIndex(0);
     setRight(0);
     setBonus(0);
+    setEarned(0);
     setPhase('run');
   }
 
   function answered(correct: boolean) {
     if (correct) setRight((r) => r + 1);
-    mutate((d) => ({ ...d, coins: (Number(d.coins) || 0) + (correct ? 1 : 0) }));
+    const q = round[index];
+    if (!correct || !q || !topic) return;
+    // learning pays once a day per question
+    const payKey = `gram:${topic.id}:${q.sentence}`;
+    const coins = earnToday(payKey, 1);
+    setEarned((e) => e + coins);
+    mutate((d) => payDaily(d, payKey, coins));
   }
 
   function next() {
@@ -59,14 +70,15 @@ export default function GrammarGame({ displayName, progress }: { displayName: st
     }
     if (!topic) return;
     const score = right;
-    const earned = score / round.length >= 0.8 ? ROUND_BONUS : 0;
-    setBonus(earned);
+    const roundKey = `gramRound:${topic.id}`;
+    const roundBonus = score / round.length >= 0.8 ? earnToday(roundKey, ROUND_BONUS) : 0;
+    setBonus(roundBonus);
     mutate((d) => {
       const all = { ...statsOf(d) };
       const prev = all[topic.id] ?? { c: 0, w: 0, best: 0, t: 0 };
       const pct = Math.round((score / round.length) * 100);
       all[topic.id] = { c: prev.c + score, w: prev.w + (round.length - score), best: Math.max(prev.best, pct), t: Date.now() };
-      return { ...d, coins: (Number(d.coins) || 0) + earned, grammarStats: all };
+      return payDaily({ ...d, grammarStats: all }, roundKey, roundBonus);
     });
     setPhase('done');
   }
@@ -150,7 +162,7 @@ export default function GrammarGame({ displayName, progress }: { displayName: st
             {right} מתוך {round.length} נכונות
           </h2>
           <div className="text-amber-700 font-black mb-5">
-            +{right + bonus} 🪙{bonus > 0 && ' (כולל בונוס 80%!)'}
+            {earned + bonus > 0 ? `+${earned + bonus} 🪙${bonus > 0 ? ' (כולל בונוס 80%!)' : ''}` : 'את המטבעות על השאלות האלה כבר קיבלת היום – מחר עוד 🌟'}
           </div>
           <div className="flex flex-wrap justify-center gap-2">
             <button onClick={start} className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black cursor-pointer">

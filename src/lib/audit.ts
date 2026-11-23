@@ -17,6 +17,7 @@ export type AuditAction =
   | 'family.create'
   | 'wordlist.delete'
   | 'coins.adjust'
+  | 'coins.recompute'
   | 'coins.suspicious';
 
 export async function audit(

@@ -43,6 +43,7 @@ export function defaultProgress(opts: { avatar?: string; pet?: string; theme?: s
     equippedAvatar: avatar,
     equippedPet: pet,
     equippedTheme: theme,
+    paidOnce: [], // tests already paid for (see src/lib/earning.ts)
   };
 }
 

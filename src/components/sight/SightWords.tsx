@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { SIGHT_ROUND, SIGHT_WORDS, SPEED, type SightWord } from '@/content/sight';
 import { speak, stopSpeaking, warmUpVoices } from '@/lib/speech';
 import { useRoundActivity } from '@/lib/use-activity';
+import { payDaily } from '@/lib/earning';
+import { useEarnToday } from '@/lib/use-earn';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import { KidPanel, KidShell, ProgressDots } from '../kid/KidShell';
 
@@ -35,12 +37,14 @@ function optionsFor(w: SightWord): string[] {
 
 export default function SightWords({ displayName, progress }: { displayName: string; progress: { data: ProgressData; version: number } }) {
   const { data, mutate, flush, status } = useProgress(progress);
+  const earnToday = useEarnToday(data);
   const [round, setRound] = useState<SightWord[]>([]);
   const [index, setIndex] = useState(0);
   const [right, setRight] = useState(0);
   const [speed, setSpeed] = useState<number>(SPEED.startMs);
   const [phase, setPhase] = useState<'intro' | 'run' | 'done'>('intro');
   const [bonus, setBonus] = useState(0);
+  const [earned, setEarned] = useState(0);
 
   useEffect(() => warmUpVoices(), []);
 
@@ -49,17 +53,22 @@ export default function SightWords({ displayName, progress }: { displayName: str
     setIndex(0);
     setRight(0);
     setBonus(0);
+    setEarned(0);
     setPhase('run');
   }
 
   function answered(w: SightWord, correct: boolean) {
     if (correct) setRight((r) => r + 1);
     setSpeed((s) => (correct ? Math.max(SPEED.minMs, s - SPEED.faster) : Math.min(SPEED.maxMs, s + SPEED.slower)));
+    // learning pays once a day per word
+    const payKey = `sight:${w.word}`;
+    const coins = correct ? earnToday(payKey, 1) : 0;
+    setEarned((e) => e + coins);
     mutate((d) => {
       const all = { ...statsOf(d) };
       const prev = all[w.word] ?? { c: 0, w: 0, t: 0 };
       all[w.word] = correct ? { c: prev.c + 1, w: prev.w, t: Date.now() } : { c: prev.c, w: prev.w + 1, t: Date.now() };
-      return { ...d, coins: (Number(d.coins) || 0) + (correct ? 1 : 0), sightStats: all };
+      return payDaily({ ...d, sightStats: all }, payKey, coins);
     });
   }
 
@@ -69,9 +78,9 @@ export default function SightWords({ displayName, progress }: { displayName: str
       setIndex(index + 1);
       return;
     }
-    const earned = right >= SIGHT_ROUND - 2 ? BONUS : 0;
-    setBonus(earned);
-    if (earned) mutate((d) => ({ ...d, coins: (Number(d.coins) || 0) + earned }));
+    const roundBonus = right >= SIGHT_ROUND - 2 ? earnToday('sightRound', BONUS) : 0;
+    setBonus(roundBonus);
+    if (roundBonus) mutate((d) => payDaily(d, 'sightRound', roundBonus));
     setPhase('done');
   }
 
@@ -123,7 +132,7 @@ export default function SightWords({ displayName, progress }: { displayName: str
           <h2 className="text-2xl font-black text-slate-800">
             {right} מתוך {round.length} נכונות
           </h2>
-          <div className="text-amber-700 font-black mb-1">+{right + bonus} 🪙</div>
+          <div className="text-amber-700 font-black mb-1">{earned + bonus > 0 ? `+${earned + bonus} 🪙` : 'על המילים האלה כבר קיבלת מטבעות היום 🌟'}</div>
           <div className="text-sm text-slate-500 mb-5">המהירות שלך עכשיו: {(speed / 1000).toFixed(1)} שניות למילה ⚡</div>
           <button onClick={start} className="px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black cursor-pointer">
             🔄 עוד סבב

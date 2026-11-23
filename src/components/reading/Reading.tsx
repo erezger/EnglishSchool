@@ -5,6 +5,8 @@ import { STORIES, glossFor, tokenize, type Story } from '@/content/stories';
 import { gradeLabel } from '@/content/wordbank';
 import { speak, stopSpeaking, warmUpVoices } from '@/lib/speech';
 import { useRoundActivity } from '@/lib/use-activity';
+import { payDaily } from '@/lib/earning';
+import { useEarnToday } from '@/lib/use-earn';
 import { useProgress, type ProgressData } from '@/lib/use-progress';
 import { KidPanel, KidShell, ProgressDots } from '../kid/KidShell';
 
@@ -33,6 +35,7 @@ export default function Reading({
   grade: number | null;
 }) {
   const { data, mutate, flush, status } = useProgress(progress);
+  const earnToday = useEarnToday(data);
   const grades = [...new Set(STORIES.map((s) => s.grade))].sort();
   const [tab, setTab] = useState<number>(grade && grades.includes(grade) ? grade : grades[grades.length - 1]);
   const [story, setStory] = useState<Story | null>(null);
@@ -66,13 +69,15 @@ export default function Reading({
     }
     const score = right;
     const total = story.questions.length;
-    const coins = score * PER_CORRECT + (score === total ? PERFECT_BONUS : 0);
+    // learning pays once a day per story
+    const payKey = `read:${story.id}`;
+    const coins = earnToday(payKey, score * PER_CORRECT + (score === total ? PERFECT_BONUS : 0));
     setEarned(coins);
     mutate((d) => {
       const all = { ...statsOf(d) };
       const prev = all[story.id] ?? { best: 0, reads: 0, t: 0 };
       all[story.id] = { best: Math.max(prev.best, Math.round((score / total) * 100)), reads: prev.reads + 1, t: Date.now() };
-      return { ...d, coins: (Number(d.coins) || 0) + coins, readingStats: all };
+      return payDaily({ ...d, readingStats: all }, payKey, coins);
     });
     setPhase('done');
   }
@@ -139,7 +144,7 @@ export default function Reading({
           <h2 className="text-2xl font-black text-slate-800">
             {right} מתוך {story.questions.length} תשובות נכונות
           </h2>
-          <div className="text-amber-700 font-black mb-5">+{earned} 🪙</div>
+          <div className="text-amber-700 font-black mb-5">{earned > 0 ? `+${earned} 🪙` : 'על הסיפור הזה כבר קיבלת מטבעות היום – מחר עוד 🌟'}</div>
           <div className="flex flex-wrap justify-center gap-2">
             <button onClick={() => open(story)} className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black cursor-pointer">
               🔄 לקרוא שוב

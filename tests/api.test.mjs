@@ -456,6 +456,44 @@ describe('mastery checks & coin adjustments', () => {
     const fam = (await parentA('GET', '/api/family')).json.students.find((s) => s.id === kidAId);
     assert.equal(fam.coinAdjustments[0].seen, true);
   });
+
+  test('recompute: estimate by the new rules, parent-only, applied as a coin change the kid sees', async () => {
+    const url = `/api/family/students/${kidAId}/recompute`;
+    assert.equal((await parentB('GET', url)).status, 404);
+    assert.equal((await kid('GET', url)).status, 403);
+    assert.equal((await parentB('POST', url, { target: 5 })).status, 404);
+
+    const { json: p } = await kid('GET', '/api/me/progress');
+    const data = { ...p.data, learnedLetters: ['a', 'b', 's'], readWords: ['bat', 'sat'], completedLevels: [1], bdBestScore: 9 };
+    delete data.paidOnce;
+    delete data.placement;
+    assert.equal((await kid('PUT', '/api/me/progress', { data, baseVersion: p.version })).status, 200);
+    // the save guard caps coin jumps, so the balance is set the parent way
+    const now = (await kid('GET', '/api/me/progress')).json.data.coins;
+    await parentA('POST', `/api/family/students/${kidAId}/coins`, { amount: 500 - now, reason: 'הכנה לבדיקה' });
+
+    const est = (await parentA('GET', url)).json;
+    assert.equal(est.current, 500);
+    const line = (label) => est.lines.find((l) => l.label === label)?.coins;
+    assert.equal(line('אותיות שנלמדו'), 3 * 2);
+    assert.equal(line('מילים שנקראו'), 2 * 3);
+    assert.equal(line('חידוני שלבים (פעם ראשונה)'), 6 * 5 + 15);
+    assert.equal(line('אתגר b/d/p/q (פעם ראשונה)'), 9 * 3 + 15);
+    assert.equal(est.target, Math.max(0, est.lines.reduce((s, l) => s + l.coins, 0)));
+
+    assert.equal((await parentA('POST', url, { target: -1 })).status, 400);
+    const r = await parentA('POST', url, { target: 120 });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.coins, 120);
+    assert.equal(r.json.applied, -380);
+    const after = (await kid('GET', '/api/me/progress')).json.data;
+    assert.equal(after.coins, 120);
+    assert.deepEqual(after.paidOnce.sort(), ['bd', 'quiz:1'], 'finished tests are marked as paid');
+    const notice = (await kid('GET', '/api/me/notices')).json.adjustments.at(-1);
+    assert.equal(notice.amount, -380);
+    assert.equal(notice.reason, 'עדכון לפי כללי המטבעות החדשים');
+    await kid('POST', '/api/me/notices/seen', { ids: [notice.id] });
+  });
 });
 
 describe('daily review (spaced repetition)', () => {

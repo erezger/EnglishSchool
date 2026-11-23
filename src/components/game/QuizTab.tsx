@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ALL_WORDS, LETTER_BANK, LEVELS, type Level, type LevelWord } from '@/content/game';
+import { canEarnOnce, COINS } from '@/lib/earning';
 import { speakLetterName, speakWord } from '@/lib/game-speech';
 import { useGame } from './GameContext';
 
@@ -78,11 +79,14 @@ function generate(wordList: LevelWord[], lvl: Level, isDigraphLevel: boolean): Q
   return out;
 }
 
+export const quizKey = (levelId: number) => `quiz:${levelId}`;
+
 export default function QuizTab({ mistakeMode = false, onExit }: { mistakeMode?: boolean; onExit?: () => void }) {
   const g = useGame();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [index, setIndex] = useState(0);
-  const [streak, setStreak] = useState(0);
+  const [firstTry, setFirstTry] = useState(0); // questions answered right with no wrong try
+  const [paid, setPaid] = useState(0); // coins this quiz paid at the end
   const [answered, setAnswered] = useState(false);
   const [wrong, setWrong] = useState<string[]>([]);
   const [finished, setFinished] = useState(false);
@@ -103,7 +107,8 @@ export default function QuizTab({ mistakeMode = false, onExit }: { mistakeMode?:
       setMode(asMistakes);
       setQuestions(generate(pool, lvl, !asMistakes && lvl.id === 6));
       setIndex(0);
-      setStreak(0);
+      setFirstTry(0);
+      setPaid(0);
       setAnswered(false);
       setWrong([]);
       setFinished(false);
@@ -130,20 +135,15 @@ export default function QuizTab({ mistakeMode = false, onExit }: { mistakeMode?:
   function answer(opt: string) {
     if (answered || !q || wrong.includes(opt)) return;
     if (opt === q.correctAnswer) {
-      const s = streak + 1;
-      setStreak(s);
       setAnswered(true);
-      let bonus = 0;
-      if (s % 3 === 0) {
-        bonus = 10;
-        g.toast('בונוס רצף 3 תשובות נכונות! +10 🪙', '🔥');
-      }
-      g.award((mode ? 10 : 5) + bonus);
+      if (!wrong.length) setFirstTry((n) => n + 1);
+      g.answered(true);
+      // mistakes practice is learning: a fixed word pays once a day; the level quiz pays at the end, first time only
+      if (mode) g.award(COINS.mistakeWord, undefined, { daily: `mistake:${q.word}` });
       g.markWordRead(q.word, false);
       if (mode) g.mutate((d) => ({ ...d, mistakes: (Array.isArray(d.mistakes) ? (d.mistakes as string[]) : []).filter((w) => w !== q.word) }));
       setTimeout(() => speakWord(q.word), 220);
     } else {
-      setStreak(0);
       g.sfx('wrong');
       g.recordMistake(q.word);
       setWrong([...wrong, opt]);
@@ -157,17 +157,16 @@ export default function QuizTab({ mistakeMode = false, onExit }: { mistakeMode?:
       setWrong([]);
       return;
     }
-    // summary rewards (same as the original)
     const lvl = g.level;
     if (!mode) {
-      if (!g.list('completedLevels').map(Number).includes(lvl.id)) {
-        g.mutate((d) => {
-          const done = (Array.isArray(d.completedLevels) ? (d.completedLevels as number[]) : []).map(Number);
-          return done.includes(lvl.id) ? d : { ...d, completedLevels: [...done, lvl.id] };
-        });
-        g.award(25, `סיימת את ${lvl.shortName}!`);
-      } else g.award(10, `בונוס חזרה על ${lvl.shortName}`);
-    } else g.award(15, 'בונוס סיום בנק החיזוק!');
+      g.mutate((d) => {
+        const done = (Array.isArray(d.completedLevels) ? (d.completedLevels as number[]) : []).map(Number);
+        return done.includes(lvl.id) ? d : { ...d, completedLevels: [...done, lvl.id] };
+      });
+      // a test pays only the first time it is completed
+      const amount = firstTry * COINS.quizPerCorrect + COINS.quizDone;
+      if (g.award(amount, `סיימת את ${lvl.shortName}!`, { once: quizKey(lvl.id) })) setPaid(amount);
+    } else if (g.award(COINS.mistakeRound, 'בונוס סיום בנק החיזוק!', { daily: 'mistakeRound' })) setPaid(COINS.mistakeRound);
     g.sfx('fanfare');
     g.confetti();
     setFinished(true);
@@ -180,7 +179,13 @@ export default function QuizTab({ mistakeMode = false, onExit }: { mistakeMode?:
         <div className="bg-gradient-to-b from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-3xl p-7 sm:p-10 text-center animate-pop">
           <div className="text-6xl mb-3">🏆🪙</div>
           <h3 className="text-2xl sm:text-3xl font-black text-indigo-900 mb-2">{mode ? 'כל הכבוד! חיזקת את המילים הקשות!' : `אלופה! סיימת את ${g.level.shortName}!`}</h3>
-          <p className="text-slate-600 font-medium mb-6">המטבעות נוספו לבנק האנגלית שלך! בדקי מה אפשר לקנות בחנות הפרסים 🛍️</p>
+          <p className="text-slate-600 font-medium mb-6" data-testid="quiz-paid">
+            {paid > 0
+              ? `+${paid} מטבעות נוספו לבנק האנגלית שלך! בדקי מה אפשר לקנות בחנות הפרסים 🛍️`
+              : mode
+                ? 'כל מילה שחיזקת נשארת איתך 💪'
+                : 'על החידון הזה כבר קיבלת מטבעות – זה היה אימון, וזה הכי חשוב 💪'}
+          </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {mode && onExit ? (
               <button onClick={onExit} className="bg-white hover:bg-slate-100 border-2 border-rose-200 text-rose-700 font-bold px-6 py-3 rounded-2xl cursor-pointer">
@@ -209,7 +214,17 @@ export default function QuizTab({ mistakeMode = false, onExit }: { mistakeMode?:
 
   return (
     <Wrap>
-      {mode && <div className="mb-3 bg-rose-100 text-rose-800 text-xs font-black px-4 py-2 rounded-2xl text-center">🎯 תרגול בנק החיזוק – כל תשובה נכונה שווה 10 מטבעות (2x)! 🪙</div>}
+      {mode && <div className="mb-3 bg-rose-100 text-rose-800 text-xs font-black px-4 py-2 rounded-2xl text-center">🎯 תרגול בנק החיזוק – כל מילה שתתקני שווה {COINS.mistakeWord} מטבעות! 🪙</div>}
+      {!mode &&
+        (canEarnOnce(g.data, quizKey(g.level.id)) ? (
+          <div className="mb-3 bg-amber-50 text-amber-800 text-xs font-black px-4 py-2 rounded-2xl text-center" data-testid="quiz-coins-note">
+            🪙 בסיום החידון: {COINS.quizPerCorrect} מטבעות על כל תשובה נכונה מהניסיון הראשון + {COINS.quizDone} בונוס (רק בפעם הראשונה!)
+          </div>
+        ) : (
+          <div className="mb-3 bg-slate-100 text-slate-600 text-xs font-black px-4 py-2 rounded-2xl text-center" data-testid="quiz-coins-note">
+            🔁 חידון אימון – על החידון הזה כבר קיבלת מטבעות. מתאמנים בשביל להיות אלופות 💪
+          </div>
+        ))}
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-bold text-slate-500">
           שאלה {index + 1} מתוך {questions.length}

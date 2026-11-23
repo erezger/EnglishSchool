@@ -7,6 +7,7 @@ import { gradeLabel } from '@/content/wordbank';
 
 const GRAMMAR_TITLES: Record<string, string> = Object.fromEntries(GRAMMAR.map((t) => [t.id, t.title]));
 import { avatarEmoji, petEmoji, TOTAL_LEVELS } from '@/lib/catalog';
+import { COINS_PER_PRACTICE_DAY, practiceDaysLabel } from '@/lib/earning';
 import ChecksAndCoins from './ChecksAndCoins';
 import ModuleSettings from './ModuleSettings';
 import type { StudentSummary } from './types';
@@ -49,7 +50,7 @@ export default function StudentCard({
   }
 
   return (
-    <div className="border-2 border-slate-200 rounded-2xl p-4 bg-white">
+    <div className="border-2 border-slate-200 rounded-2xl p-4 bg-white" data-testid={`student-card-${student.username}`}>
       <div className="flex items-start gap-3">
         <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-3xl shrink-0">
           <span>{avatarEmoji(p.equippedAvatar)}</span>
@@ -158,7 +159,7 @@ export default function StudentCard({
               {student.rewards.map((r) => (
                 <div key={r.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
                   <span className="font-bold text-slate-800">
-                    {r.title} <span className="text-amber-700 text-xs">({r.cost} 🪙)</span>
+                    {r.title} <span className="text-amber-700 text-xs">({r.cost} 🪙 · ≈ {practiceDaysLabel(r.cost)})</span>
                   </span>
                   <Btn
                     variant="ghost"
@@ -200,6 +201,11 @@ export default function StudentCard({
                 הוסף
               </Btn>
             </form>
+            <p className="text-xs text-slate-500 mt-1.5" data-testid="reward-price-hint">
+              {Number(rewardCost) > 0
+                ? `${Number(rewardCost)} מטבעות ≈ ${practiceDaysLabel(Number(rewardCost))} (יום תרגול רגיל ≈ ${COINS_PER_PRACTICE_DAY} מטבעות)`
+                : `לתמחור: יום תרגול רגיל ≈ ${COINS_PER_PRACTICE_DAY} מטבעות. למשל פרס קטן ≈ 300, פרס גדול ≈ 1,000.`}
+            </p>
           </div>
 
           <ModuleSettings student={student} qs={qs} onChanged={onChanged} />
