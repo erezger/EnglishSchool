@@ -1,5 +1,5 @@
 // Shared (client + server) catalog of looks a kid can start with.
-// Must match SHOP_AVATARS / SHOP_PETS / SHOP_THEMES ids in src/legacy/app.js.
+// Must match SHOP_AVATARS / SHOP_PETS / SHOP_THEMES ids in src/content/game.ts.
 
 export const AVATARS = [
   { id: 'av_girl', emoji: '👧🏻', name: 'ילדה חכמה' },

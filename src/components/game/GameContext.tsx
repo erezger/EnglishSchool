@@ -22,6 +22,7 @@ type GameCtx = {
   list: (key: string) => string[];
   mutate: (op: (d: ProgressData) => ProgressData) => void;
   flush: () => Promise<void>;
+  refresh: () => Promise<void>;
   award: (amount: number, message?: string) => void;
   recordMistake: (word: string) => void;
   markWordRead: (word: string, withReward?: boolean) => void;
@@ -62,7 +63,7 @@ export function GameProvider({
   progress: { data: ProgressData; version: number };
   children: ReactNode;
 }) {
-  const { data, status, mutate, flush, remoteChanges } = useProgress(progress, { pollMs: 5000 });
+  const { data, status, mutate, flush, refresh, remoteChanges } = useProgress(progress, { pollMs: 5000 });
   const firstOpen = LEVELS.find((l) => !strings(progress.data.completedLevels).map(Number).includes(l.id)) ?? LEVELS[0];
   const [levelId, setLevelId] = useState(firstOpen.id);
   const [tab, setTabState] = useState<Tab>('learn');
@@ -199,6 +200,7 @@ export function GameProvider({
       list: (k) => strings(data[k]),
       mutate,
       flush,
+      refresh,
       award,
       recordMistake,
       markWordRead,
@@ -216,7 +218,7 @@ export function GameProvider({
       coinPops,
       confettiKey,
     }),
-    [user, settings, data, status, mutate, flush, award, recordMistake, markWordRead, toast, sfx, confetti, level, selectLevel, tab, setTab, modal, leave, toasts, coinPops, confettiKey],
+    [user, settings, data, status, mutate, flush, refresh, award, recordMistake, markWordRead, toast, sfx, confetti, level, selectLevel, tab, setTab, modal, leave, toasts, coinPops, confettiKey],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

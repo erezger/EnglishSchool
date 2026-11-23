@@ -105,27 +105,38 @@ export function useProgress(initial: { data: ProgressData; version: number }, op
     };
   }, [flush]);
 
+  /** Adopt the server copy if it is newer and we have nothing unsaved. `quiet` = our own server-side action (no "updated" notice). */
+  const pull = useCallback(async (quiet: boolean) => {
+    if (inflight.current || pending.current.length) return;
+    try {
+      const res = await fetch('/api/me/progress', { cache: 'no-store' });
+      if (res.status === 401) {
+        window.location.href = '/login?expired=1';
+        return;
+      }
+      if (!res.ok) return;
+      const server = (await res.json()) as { data: ProgressData; version: number };
+      if (server.version > base.current.version && !inflight.current && !pending.current.length) {
+        base.current = { data: server.data, version: server.version };
+        setData(server.data);
+        if (!quiet) setRemoteChanges((n) => n + 1);
+      }
+    } catch {
+      /* offline: try again next tick */
+    }
+  }, []);
+
+  /** Flush our changes, then take the server copy (after an action that changed progress on the server). */
+  const refresh = useCallback(async () => {
+    await flush();
+    await pull(true);
+  }, [flush, pull]);
+
   // Optional polling: adopt changes made elsewhere when we have nothing unsaved
   useEffect(() => {
     if (!options.pollMs) return;
-    const check = async () => {
-      if (document.visibilityState !== 'visible' || inflight.current || pending.current.length) return;
-      try {
-        const res = await fetch('/api/me/progress', { cache: 'no-store' });
-        if (res.status === 401) {
-          window.location.href = '/login?expired=1';
-          return;
-        }
-        if (!res.ok) return;
-        const server = (await res.json()) as { data: ProgressData; version: number };
-        if (server.version > base.current.version && !inflight.current && !pending.current.length) {
-          base.current = { data: server.data, version: server.version };
-          setData(server.data);
-          setRemoteChanges((n) => n + 1);
-        }
-      } catch {
-        /* offline: try again next tick */
-      }
+    const check = () => {
+      if (document.visibilityState === 'visible') void pull(false);
     };
     const t = setInterval(check, options.pollMs);
     window.addEventListener('focus', check);
@@ -133,7 +144,7 @@ export function useProgress(initial: { data: ProgressData; version: number }, op
       clearInterval(t);
       window.removeEventListener('focus', check);
     };
-  }, [options.pollMs]);
+  }, [options.pollMs, pull]);
 
-  return { data, status, mutate, flush, remoteChanges, hasPending: () => pending.current.length > 0 };
+  return { data, status, mutate, flush, refresh, remoteChanges, hasPending: () => pending.current.length > 0 };
 }
