@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 import { AVATARS, PETS, THEMES } from './catalog';
-import { query } from './db';
+import { audit } from './audit';
+import { query, withTransaction } from './db';
 import { addDays, todayStr } from './review';
 
 export type ProgressData = Record<string, unknown>;
@@ -65,26 +66,68 @@ export async function getProgress(studentId: string): Promise<Progress | null> {
   return rows[0] ? toProgress(rows[0]) : null;
 }
 
-export type SaveResult = { ok: true; version: number } | { ok: false; current: Progress };
+export type SaveResult = { ok: true; version: number; coins: number } | { ok: false; current: Progress };
 
 /**
  * Optimistic concurrency: the write only lands if the client saw the latest version.
  * If a parent reset (or another device) changed it meanwhile, the client gets the
  * current server copy back instead of silently overwriting it.
  */
+/**
+ * Coin guard: the game client reports coins, so a save may add at most MAX_GAIN_PER_SAVE
+ * coins and at most MAX_GAIN_PER_HOUR per hour (server-side coins from checks, redemptions
+ * and parents don't count). Anything above is clamped and audited.
+ */
+export const MAX_GAIN_PER_SAVE = 100;
+export const MAX_GAIN_PER_HOUR = 400;
+const hourlyGains = new Map<string, { since: number; total: number }>();
+
+function allowedGain(studentId: string, wanted: number): number {
+  const now = Date.now();
+  let g = hourlyGains.get(studentId);
+  if (!g || now - g.since > 60 * 60_000) {
+    g = { since: now, total: 0 };
+    hourlyGains.set(studentId, g);
+  }
+  const allowed = Math.max(0, Math.min(wanted, MAX_GAIN_PER_SAVE, MAX_GAIN_PER_HOUR - g.total));
+  g.total += allowed;
+  return allowed;
+}
+
 export async function saveProgressIfVersion(
   studentId: string,
   data: ProgressData,
   baseVersion: number,
 ): Promise<SaveResult> {
-  const { rows } = await query<{ version: string }>(
-    `UPDATE student_progress
-        SET data = $2::jsonb, version = version + 1, updated_at = now()
-      WHERE user_id = $1 AND version = $3
-      RETURNING version`,
-    [studentId, JSON.stringify(stripServerOwned(data)), baseVersion],
-  );
-  if (rows[0]) return { ok: true, version: Number(rows[0].version) };
+  const outcome = await withTransaction(async (client) => {
+    const cur = await client.query<{ data: ProgressData; version: string }>(
+      'SELECT data, version FROM student_progress WHERE user_id = $1 FOR UPDATE',
+      [studentId],
+    );
+    const row = cur.rows[0];
+    if (!row) throw new Error('progress row missing');
+    if (Number(row.version) !== baseVersion) return null; // stale -> conflict
+
+    const next = stripServerOwned(data);
+    const before = Number(row.data.coins) || 0;
+    const wanted = Number(next.coins);
+    if (Number.isFinite(wanted) && wanted > before) {
+      const gain = allowedGain(studentId, wanted - before);
+      if (gain < wanted - before) {
+        next.coins = before + gain;
+        await audit(null, 'coins.suspicious', studentId, { before, wanted, allowed: before + gain }, client);
+      }
+    } else if (!Number.isFinite(wanted) || wanted < 0) {
+      next.coins = Math.max(0, before);
+    }
+
+    const upd = await client.query<{ version: string }>(
+      'UPDATE student_progress SET data = $2::jsonb, version = version + 1, updated_at = now() WHERE user_id = $1 RETURNING version',
+      [studentId, JSON.stringify(next)],
+    );
+    return { version: Number(upd.rows[0].version), coins: Number(next.coins) || 0 };
+  });
+  if (outcome) return { ok: true, version: outcome.version, coins: outcome.coins };
   const current = await getProgress(studentId);
   if (!current) throw new Error('progress row missing');
   return { ok: false, current };

@@ -68,9 +68,10 @@ export function useProgress(initial: { data: ProgressData; version: number }) {
           continue;
         }
         if (!res.ok) throw new Error(`save failed ${res.status}`);
-        const { version } = (await res.json()) as { version: number };
-        base.current = { data: payload, version };
+        const { version, coins } = (await res.json()) as { version: number; coins?: number };
+        base.current = { data: typeof coins === 'number' ? { ...payload, coins } : payload, version };
         pending.current = pending.current.slice(sentOps);
+        setData(current());
       }
       setStatus('saved');
     } catch {

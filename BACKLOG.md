@@ -12,6 +12,7 @@
 - Speaking practice with speech recognition (PR #11)
 - Per-kid module on/off settings (PR #12)
 - Activity log, weekly parent report, daily goal (PR #13)
+- Server-side coin guard: caps per save and per hour, audit + parent warning (PR #14)
 
 Ideas and requests not built yet, roughly by priority. Move an item to a branch/PR when work starts.
 
@@ -30,4 +31,4 @@ Ideas and requests not built yet, roughly by priority. Move an item to a branch/
 
 - Split the rest of `src/legacy` into React components (spelling is the first React game page).
 - Off-server copies of DB backups (e.g. Oracle Object Storage).
-- Server-side coin accounting (today the game client reports coins; a tech-savvy kid could edit them).
+- Full server-side coin accounting (would need the original game rewritten; today a server-side cap per save/hour limits abuse).

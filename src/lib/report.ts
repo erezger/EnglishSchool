@@ -4,6 +4,7 @@ import { SENTENCES } from '@/content/phonics';
 import { weekActivity } from './activity';
 import { recentChecks } from './checks';
 import { getKidSettings } from './kid-settings';
+import { query } from './db';
 import { getProgress, summarize, type ProgressData } from './progress';
 
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
@@ -33,6 +34,10 @@ function weakSpots(data: ProgressData) {
 }
 
 export async function buildReport(studentId: string, familyId: string) {
+  const suspicious = query<{ n: string }>(
+    "SELECT count(*) AS n FROM audit_log WHERE action = 'coins.suspicious' AND target_id = $1 AND created_at > now() - interval '7 days'",
+    [studentId],
+  );
   const [activity, progress, settings, checks] = await Promise.all([
     weekActivity(studentId),
     getProgress(studentId),
@@ -49,6 +54,7 @@ export async function buildReport(studentId: string, familyId: string) {
     summary: summarize(data),
     weak: weakSpots(data),
     checks: (checks.get(studentId) ?? []).filter((c) => c.status === 'done').slice(0, 3),
+    suspiciousCoins: Number((await suspicious).rows[0]?.n ?? 0),
   };
 }
 
