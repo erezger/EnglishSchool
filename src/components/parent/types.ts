@@ -30,6 +30,8 @@ export type StudentSummary = {
     grammar: Record<string, number>;
     storiesRead: number;
     storiesAvg: number;
+    speakingTried: number;
+    speakingOk: number;
   };
   grade: number | null;
   rewards: { id: string; title: string; cost: number }[];
